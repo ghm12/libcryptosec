@@ -91,9 +91,9 @@ Certificate::~Certificate()
  		}
  		try /* Serial Number */
  		{
- 			value = this->getSerialNumber();
- 			sprintf(temp, "%d", (int)value);
- 			string = temp;
+ 			string = this->getSerialNumberBigInt().toDec();
+ 			//sprintf(temp, "%d", (int)value);
+ 			//string = temp;
  			ret += "\t\t<serialNumber>" + string + "</serialNumber>\n";
  		}
  		catch (...)

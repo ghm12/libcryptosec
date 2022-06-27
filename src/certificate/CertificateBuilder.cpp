@@ -141,9 +141,9 @@ CertificateBuilder::~CertificateBuilder()
  		}
  		try /* Serial Number */
  		{
- 			value = this->getSerialNumber();
- 			sprintf(temp, "%d", (int)value);
- 			string = temp;
+ 			string = this->getSerialNumberBigInt().toDec();
+ 			//sprintf(temp, "%d", (int)value);
+ 			//string = temp;
  			ret += "\t\t<serialNumber>" + string + "</serialNumber>\n";
  		}
  		catch (...)
@@ -478,7 +478,7 @@ void CertificateBuilder::setSerialNumber(BigInteger serial) throw(BigIntegerExce
 
 long CertificateBuilder::getSerialNumber() throw (CertificationException)
 {
-	ASN1_INTEGER *asn1Int;
+	ASN1_INTEGER *asn1Int = ASN1_INTEGER_new();
 	long ret;
 	/* Here, we have a problem!!! the return value -1 can be error and a valid value. */
 	asn1Int = X509_get_serialNumber(this->cert);
@@ -590,9 +590,11 @@ long CertificateBuilder::getVersion() throw (CertificationException)
 
 void CertificateBuilder::setNotBefore(DateTime &dateTime)
 {
-	ASN1_TIME *asn1Time;
-	asn1Time = dateTime.getAsn1Time();
-	X509_set_notBefore(this->cert, asn1Time);
+	ASN1_TIME *asn1Time = ASN1_TIME_set(NULL, dateTime.getDateTime());
+	//asn1Time = dateTime.getAsn1Time();
+	//ASN1_TIME_set_string(asn1Time, "20200605100000Z");
+
+	X509_set1_notBefore(this->cert, asn1Time);
 	ASN1_TIME_free(asn1Time);
 }
 
@@ -605,9 +607,11 @@ DateTime CertificateBuilder::getNotBefore()
 
 void CertificateBuilder::setNotAfter(DateTime &dateTime)
 {
-	ASN1_TIME *asn1Time;
-	asn1Time = dateTime.getAsn1Time();
-	X509_set_notAfter(this->cert, asn1Time);
+	ASN1_TIME *asn1Time = ASN1_TIME_set(NULL, dateTime.getDateTime());
+	//asn1Time = dateTime.getAsn1Time();
+	//ASN1_TIME_set_string(asn1Time, "20200605100000Z");
+
+	X509_set1_notAfter(this->cert, asn1Time);
 	ASN1_TIME_free(asn1Time);
 }
 

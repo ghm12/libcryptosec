@@ -3,11 +3,13 @@
 RSAKeyPair::RSAKeyPair(int length)
 		throw (AsymmetricKeyException)
 {
-	RSA *rsa;
+	RSA *rsa = RSA_new();
+	BIGNUM *bn = BN_new();
+	BN_set_word(bn, RSA_F4);
 	this->key = NULL;
 	this->engine = NULL;
-	rsa = NULL;
-	if (!RSA_generate_key_ex(rsa, length, NULL, NULL))
+	//rsa = NULL;
+	if (!RSA_generate_key_ex(rsa, length, bn, NULL))
 	{
 		throw AsymmetricKeyException(AsymmetricKeyException::INTERNAL_ERROR, "RSAKeyPair::RSAKeyPair");
 	}

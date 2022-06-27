@@ -2,21 +2,30 @@
 
 Hmac::Hmac() {
 	this->state = Hmac::NO_INIT;
+	this->ctx = HMAC_CTX_new();
 }
 
 Hmac::Hmac(std::string key, MessageDigest::Algorithm algorithm) throw (HmacException) {
+	this->state = Hmac::NO_INIT;
+	this->ctx = HMAC_CTX_new();
 	this->init( key, algorithm );
 }
 
 Hmac::Hmac(ByteArray key, MessageDigest::Algorithm algorithm) throw (HmacException) {
+	this->state = Hmac::NO_INIT;
+	this->ctx = HMAC_CTX_new();
 	this->init( key, algorithm );
 }
 
 Hmac::Hmac(std::string key, MessageDigest::Algorithm algorithm, Engine &engine) throw (HmacException) {
+	this->state = Hmac::NO_INIT;
+	this->ctx = HMAC_CTX_new();
 	this->init( key, algorithm, engine );
 }
 
 Hmac::Hmac(ByteArray key, MessageDigest::Algorithm algorithm, Engine &engine) throw (HmacException) {
+	this->state = Hmac::NO_INIT;
+	this->ctx = HMAC_CTX_new();
 	this->init( key, algorithm, engine );
 }
 
@@ -29,7 +38,6 @@ void Hmac::init(ByteArray &key, MessageDigest::Algorithm algorithm) throw (HmacE
 	{
 		HMAC_CTX_reset( this->ctx ); //martin: HMAC_CTX_cleanup -> HMAC_CTX_free, see openssl1.1.0c/CHANGES:647
 	}
-	this->ctx = HMAC_CTX_new();
 
 	this->algorithm = algorithm;
 	const EVP_MD *md = MessageDigest::getMessageDigest( this->algorithm );
@@ -48,7 +56,6 @@ void Hmac::init(ByteArray &key, MessageDigest::Algorithm algorithm, Engine &engi
 	{
 		HMAC_CTX_reset( this->ctx ); //martin: HMAC_CTX_cleanup -> HMAC_CTX_free, see openssl1.1.0c/CHANGES:647
 	}
-	this->ctx = HMAC_CTX_new();
 
 	this->algorithm = algorithm;
 	const EVP_MD *md = MessageDigest::getMessageDigest( this->algorithm );

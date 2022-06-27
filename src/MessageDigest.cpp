@@ -13,7 +13,9 @@ MessageDigest::MessageDigest(MessageDigest::Algorithm algorithm)
 	const EVP_MD *md;
 	this->state = MessageDigest::INIT;
 	this->algorithm = algorithm;
+	this->ctx = EVP_MD_CTX_new();
 	md = MessageDigest::getMessageDigest(this->algorithm);
+	EVP_MD_CTX_init(this->ctx);
 	rc = EVP_DigestInit(this->ctx, md);
 	if (!rc)
 	{
@@ -28,6 +30,7 @@ MessageDigest::MessageDigest(MessageDigest::Algorithm algorithm, Engine &engine)
 	const EVP_MD *md;
 	this->state = MessageDigest::INIT;
 	this->algorithm = algorithm;
+	this->ctx = EVP_MD_CTX_new();
 	md = MessageDigest::getMessageDigest(this->algorithm);
 	EVP_MD_CTX_init(this->ctx);
 	rc = EVP_DigestInit_ex(this->ctx, md, engine.getEngine());

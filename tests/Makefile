@@ -1,8 +1,8 @@
 ############# CC FLAGS ###############################
 NAME = test.out
 CC = g++
-CPPFLAGS = -g -std=c++98 -DGTEST_HAS_PTHREAD=0
-DEFS = -DFIPS
+CPPFLAGS = -g -std=c++11 -DGTEST_HAS_PTHREAD=0
+DEFS =
 
 ############# ENVIRONMENT ###############################
 OPENSSL_PREFIX ?= /usr
