@@ -29,8 +29,8 @@ protected:
 /*
  * Initialization of variables used in the tests
  */
-std::string strB64 = "SSBsb3ZlIGNoZWVzZWJ1cmdlcg==";
-ByteArray AsymmetricCipherTest::baData = Base64::decode(strB64);
+std::string stringB64 = "SSBsb3ZlIGNoZWVzZWJ1cmdlcg==";
+ByteArray AsymmetricCipherTest::baData = Base64::decode(stringB64);
 
 RSAKeyPair keyPair = RSAKeyPair(2048);
 RSAPrivateKey AsymmetricCipherTest::privKey = RSAPrivateKey(keyPair.getPrivateKey()->getEvpPkey());
@@ -43,6 +43,7 @@ TEST_F(AsymmetricCipherTest, EncryptPKCS1) {
     ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::baData, AsymmetricCipher::PKCS1);
     ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::PKCS1);
 
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
     ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
 }
 
@@ -53,6 +54,7 @@ TEST_F(AsymmetricCipherTest, EncryptPKCS1_OAEP) {
     ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::baData, AsymmetricCipher::PKCS1_OAEP);
     ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::PKCS1_OAEP);
 
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
     ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
 }
 
@@ -63,6 +65,7 @@ TEST_F(AsymmetricCipherTest, EncryptSSLV23) {
     ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::baData, AsymmetricCipher::SSLV23);
     ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::SSLV23);
 
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
     ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
 }
 
@@ -71,5 +74,6 @@ TEST_F(AsymmetricCipherTest, EncryptNO_PADDING) {
     ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::baData, AsymmetricCipher::NO_PADDING);
     ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::NO_PADDING);
 
-    ASSERT_EQ("I love cheeseburger", baDecrypt.toString());
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
+    ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
 } */
