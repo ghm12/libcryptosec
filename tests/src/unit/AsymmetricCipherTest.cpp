@@ -1,6 +1,6 @@
 #include <libcryptosec/AsymmetricCipher.h>
 #include <libcryptosec/RSAKeyPair.h>
-#include <libcryptosec/Base64.h>
+#include <libcryptosec/ByteArray.h>
 
 #include <gtest/gtest.h>
 
@@ -23,14 +23,15 @@ protected:
 
     /* Content to be ciphered and compared
        to when deciphered*/
+    static std::string stringASCII;
     static ByteArray baData;
 };
 
 /*
  * Initialization of variables used in the tests
  */
-std::string stringB64 = "SSBsb3ZlIGNoZWVzZWJ1cmdlcg==";
-ByteArray AsymmetricCipherTest::baData = Base64::decode(stringB64);
+std::string AsymmetricCipherTest::stringASCII = "I love cheeseburger";
+ByteArray AsymmetricCipherTest::baData = ByteArray(AsymmetricCipherTest::stringASCII);
 
 RSAKeyPair keyPair = RSAKeyPair(2048);
 RSAPrivateKey AsymmetricCipherTest::privKey = RSAPrivateKey(keyPair.getPrivateKey()->getEvpPkey());
@@ -71,7 +72,47 @@ TEST_F(AsymmetricCipherTest, EncryptSSLV23) {
 
 /*
 TEST_F(AsymmetricCipherTest, EncryptNO_PADDING) {
-    ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::baData, AsymmetricCipher::NO_PADDING);
+    ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::stringASCII, AsymmetricCipher::NO_PADDING);
+    ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::NO_PADDING);
+
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
+    ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
+} */
+
+/**
+ * @brief Tests Asymmetric Cipher with padding PKCS1
+ */
+TEST_F(AsymmetricCipherTest, EncryptStringPKCS1) {
+    ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::stringASCII, AsymmetricCipher::PKCS1);
+    ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::PKCS1);
+
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
+    ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
+}
+
+/*
+TEST_F(AsymmetricCipherTest, EncryptStringPKCS1_OAEP) {
+    ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::stringASCII, AsymmetricCipher::PKCS1_OAEP);
+    ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::PKCS1);
+
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
+    ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
+} */
+
+/**
+ * @brief Tests Asymmetric Cipher with padding SSLV23
+ */
+TEST_F(AsymmetricCipherTest, EncryptStringSSLV23) {
+    ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::stringASCII, AsymmetricCipher::SSLV23);
+    ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::PKCS1);
+
+    ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);
+    ASSERT_EQ(AsymmetricCipherTest::baData, baDecrypt);
+}
+
+/*
+TEST_F(AsymmetricCipherTest, EncryptStringNO_PADDING) {
+    ByteArray baEncrypt = AsymmetricCipher::encrypt(AsymmetricCipherTest::pubKey, AsymmetricCipherTest::stringASCII, AsymmetricCipher::NO_PADDING);
     ByteArray baDecrypt = AsymmetricCipher::decrypt(AsymmetricCipherTest::privKey, baEncrypt, AsymmetricCipher::NO_PADDING);
 
     ASSERT_NE(AsymmetricCipherTest::baData, baEncrypt);

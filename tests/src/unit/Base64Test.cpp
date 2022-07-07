@@ -1,6 +1,6 @@
 #include <libcryptosec/Base64.h>
 
-#include <isstream>
+#include <sstream>
 #include <gtest/gtest.h>
 
 

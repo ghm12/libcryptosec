@@ -1,6 +1,6 @@
 #include <libcryptosec/ByteArray.h>
 
-#include <osstream>
+#include <sstream>
 #include <gtest/gtest.h>
 
 
