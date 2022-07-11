@@ -250,3 +250,35 @@ TEST_F(BigIntegerTest, SetRandValue) {
     ASSERT_EQ("3155627804495320980657", ba->toString());
 
 } */
+
+/**
+ * @brief 
+ */
+TEST_F(BigIntegerTest, GetASN1Value) {
+    int64_t *value = new int64_t;
+    BigInteger bi;
+    ASSERT_EQ(0, bi.getValue());
+    ASSERT_EQ(0, bi.size());
+
+    bi.setValue(BigIntegerTest::longValue);
+    ASN1_INTEGER *asn1Int = bi.getASN1Value();
+    ASN1_INTEGER_get_int64(value, asn1Int);
+
+    ASSERT_EQ(BigIntegerTest::longValue, *value);
+}
+
+/**
+ * @brief 
+ */
+TEST_F(BigIntegerTest, GetBIGNUM) {
+    char *chr = new char;
+    BigInteger bi;
+    ASSERT_EQ(0, bi.getValue());
+    ASSERT_EQ(0, bi.size());
+
+    bi.setValue(BigIntegerTest::longValue);
+    const BIGNUM *bn = bi.getBIGNUM();
+    chr = BN_bn2dec(bn);
+
+    ASSERT_EQ(BigIntegerTest::decValue, chr);
+}
