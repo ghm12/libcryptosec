@@ -39,7 +39,7 @@ std::string BigIntegerTest::hexValue = "112210F4B16C1CB1";
 std::string BigIntegerTest::hexValueNeg = "-112210F4B16C1CB1";
 
 /**
- * @brief 
+ * @brief Tests if Default Constructor creates a BigInteger with value zero
  */
 TEST_F(BigIntegerTest, DefaultConstructor) {
     BigInteger bi;
@@ -54,7 +54,7 @@ TEST_F(BigIntegerTest, DefaultConstructor) {
 }
 
 /**
- * @brief 
+ * @brief Tests if Constructor with a long parameter creates a BigInteger with proper value
  */
 TEST_F(BigIntegerTest, LongConstructor) {
     BigInteger bi(BigIntegerTest::longValue);
@@ -69,7 +69,7 @@ TEST_F(BigIntegerTest, LongConstructor) {
 }
 
 /**
- * @brief 
+ * @brief Tests if Constructor with a negative long parameter creates a BigInteger with proper value
  */
 TEST_F(BigIntegerTest, LongConstructorNeg) {
     BigInteger bi(BigIntegerTest::longValueNeg);
@@ -84,7 +84,7 @@ TEST_F(BigIntegerTest, LongConstructorNeg) {
 }
 
 /**
- * @brief 
+ * @brief Tests if Constructor with a decimal parameter creates a BigInteger with proper value
  */
 TEST_F(BigIntegerTest, DecConstructor) {
     BigInteger bi(BigIntegerTest::decValue);
@@ -99,7 +99,7 @@ TEST_F(BigIntegerTest, DecConstructor) {
 }
 
 /**
- * @brief 
+ * @brief Tests if Constructor with a negative decimal parameter creates a BigInteger with proper value
  */
 TEST_F(BigIntegerTest, DecConstructorNeg) {
     BigInteger bi(BigIntegerTest::decValueNeg);
@@ -114,7 +114,7 @@ TEST_F(BigIntegerTest, DecConstructorNeg) {
 }
 
 /**
- * @brief 
+ * @brief Tests if setValue works properly with long, decimal and hexadecimal values
  */
 TEST_F(BigIntegerTest, SetValue) {
     BigInteger bi;
@@ -152,7 +152,7 @@ TEST_F(BigIntegerTest, SetValue) {
 }
 
 /**
- * @brief 
+ * @brief Tests if setValue works properly with negative long, decimal and hexadecimal values
  */
 TEST_F(BigIntegerTest, SetValueNeg) {
     BigInteger bi;
@@ -190,7 +190,7 @@ TEST_F(BigIntegerTest, SetValueNeg) {
 }
 
 /**
- * @brief 
+ * @brief Tests if setNegative properly sets the value to negative
  */
 TEST_F(BigIntegerTest, SetNegative) {
     BigInteger bi;
@@ -216,7 +216,7 @@ TEST_F(BigIntegerTest, SetNegative) {
 }
 
 /**
- * @brief 
+ * @brief Tests if setRandValue creates a value with the specified number of bits
  */
 TEST_F(BigIntegerTest, SetRandValue) {
     BigInteger bi;
@@ -236,23 +236,27 @@ TEST_F(BigIntegerTest, SetRandValue) {
     ASSERT_EQ(16, bi.toHex().length());
 }
 
-/** TODO
- * @brief 
+/**
+ * @brief Tests if the ByteArray with mpi codification can be used to create a BigInteger of same value
  */
-/* TEST_F(BigIntegerTest, getBinValue) {
+TEST_F(BigIntegerTest, getBinValue) {
     BigInteger bi;
     ASSERT_EQ(0, bi.getValue());
     ASSERT_EQ(0, bi.size());
 
-    bi.setHexValue("AB112210F4B16C1CB1");
+    bi.setValue(BigIntegerTest::longValue);
     ByteArray *ba = bi.getBinValue();
-    ASSERT_EQ(BigIntegerTest::decValue, ba->toString());
-    ASSERT_EQ("3155627804495320980657", ba->toString());
+    BigInteger biTest(*ba);
+    ASSERT_EQ(bi.getValue(), biTest.getValue());
 
-} */
+    bi.setValue(BigIntegerTest::longValueNeg);
+    ba = bi.getBinValue();
+    BigInteger biTestNeg(*ba);
+    ASSERT_EQ(bi.getValue(), biTestNeg.getValue());
+}
 
 /**
- * @brief 
+ * @brief Tests if the ASN1_INTEGER returned has the correct value
  */
 TEST_F(BigIntegerTest, GetASN1Value) {
     int64_t *value = new int64_t;
@@ -268,7 +272,7 @@ TEST_F(BigIntegerTest, GetASN1Value) {
 }
 
 /**
- * @brief 
+ * @brief Tests if the BIGNUM returned has the correct value
  */
 TEST_F(BigIntegerTest, GetBIGNUM) {
     char *chr = new char;
