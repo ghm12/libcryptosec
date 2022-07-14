@@ -225,15 +225,12 @@ TEST_F(BigIntegerTest, SetRandValue) {
 
     bi.setRandValue(16);
     ASSERT_FALSE(bi.size() > 16);
-    ASSERT_EQ(4, bi.toHex().length());
 
     bi.setRandValue(32);
     ASSERT_FALSE(bi.size() > 32);
-    ASSERT_EQ(8, bi.toHex().length());
 
     bi.setRandValue(64);
     ASSERT_FALSE(bi.size() > 64);
-    ASSERT_EQ(16, bi.toHex().length());
 }
 
 /**

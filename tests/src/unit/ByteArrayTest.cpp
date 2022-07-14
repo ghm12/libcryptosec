@@ -109,15 +109,44 @@ TEST_F(ByteArrayTest, FromOStringStream) {
 }
 
 /**
- * @brief Tests ByteArray SetDataPointer
+ * @brief Tests ByteArray setDataPointer and getDataPointer
  */
-TEST_F(ByteArrayTest, SetDataPointer) {
+TEST_F(ByteArrayTest, DataPointer) {
     ByteArray ba;
     ASSERT_EQ(0, ba.size());
 
     unsigned char *chr = new unsigned char[ByteArrayTest::size];
     memcpy(chr, ByteArrayTest::chr, ByteArrayTest::size);
     ba.setDataPointer(chr, ByteArrayTest::size);
+    ByteArray baCopy = ba;
+    std::istringstream *iss = ba.toStream();
+
+    std::string issValue = iss->str();
+    char at = ba.at(10);
+
+    ASSERT_EQ(at, ByteArrayTest::compChar);
+    ASSERT_EQ(ba.toHex(), ByteArrayTest::stringHex);
+    ASSERT_EQ(ba.size(), ByteArrayTest::size);
+    ASSERT_EQ(ba.getDataPointer(), chr);
+
+    ASSERT_EQ(baCopy, ba);
+    ASSERT_EQ(issValue, ByteArrayTest::stringASCII);
+    ASSERT_EQ(ba[10], ByteArrayTest::compChar);
+
+    ASSERT_TRUE(ba == baCopy);
+    ASSERT_FALSE(ba != baCopy);
+}
+
+/**
+ * @brief Tests ByteArray copyFrom
+ */
+TEST_F(ByteArrayTest, CopyFromChar) {
+    ByteArray ba;
+    ASSERT_EQ(0, ba.size());
+
+    unsigned char *chr = new unsigned char[ByteArrayTest::size];
+    memcpy(chr, ByteArrayTest::chr, ByteArrayTest::size);
+    ba.copyFrom(chr, ByteArrayTest::size);
     ByteArray baCopy = ba;
     std::istringstream *iss = ba.toStream();
 
