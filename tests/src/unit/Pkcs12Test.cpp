@@ -12,14 +12,16 @@
  */
 class Pkcs12Test : public ::testing::Test {
 
-private:
-    PrivateKey *privKey;
-    Certificate *cert;
-    Pkcs12 *pkcs12;
-    Pkcs12 *factoryPkcs12;
-
 protected:
     virtual void SetUp() {
+
+    }
+
+    virtual void TearDown() {
+
+    }
+
+    void startUp() {
         RSAKeyPair keyPair(2048);
         privKey = keyPair.getPrivateKey();
 
@@ -28,11 +30,6 @@ protected:
         cert = certBuilder.sign(*privKey, MessageDigest::SHA256);
 
         password = "tasukete";
-    }
-
-    virtual void TearDown() {
-        delete(privKey);
-        delete(cert);
     }
 
     void testPkcs12Builder() {
@@ -61,6 +58,10 @@ protected:
         ASSERT_EQ(pkcs12Key->getPemEncoded(), privKey->getPemEncoded());
     }
 
+    PrivateKey *privKey;
+    Certificate *cert;
+    Pkcs12 *pkcs12;
+    Pkcs12 *factoryPkcs12;
     std::string password;
 };
 
@@ -68,18 +69,28 @@ protected:
  * Initialization of variables used in the tests
  */
 
+TEST_F(Pkcs12Test, InitTestCase) {
+    startUp();
+}
+
 /**
- * @brief 
+ * @brief Tests if Pkcs12Builder properly builds a pkcs12 object
  */
 TEST_F(Pkcs12Test, Pkcs12Builder) {
     testPkcs12Builder();
 }
 
+/**
+ * @brief Tests if Pkcs12Factory properly builds a pkcs12 object
+ */
 TEST_F(Pkcs12Test, Pkcs12Factory) {
     testPkcs12Factory();
 }
 
+/**
+ * @brief Tests if both objects from previous tests are identical and
+ * if their PrivateKey and Certificate is equal to the one used in creation
+ */
 TEST_F(Pkcs12Test, Pkcs12) {
-    // TODO fix
-    //testPkcs12();
+    testPkcs12();
 }
