@@ -53,7 +53,7 @@ protected:
 std::string SignerTest::data = "Arbitrary sentence.";
 
 /**
- * @brief Tests signing a hash and veryfing it afterwards with the correct and wrong key.
+ * @brief Tests signing a hash and verifying it afterwards with the correct and wrong key.
  */
 TEST_F(SignerTest, SignAndVerify) {
     testSign();
