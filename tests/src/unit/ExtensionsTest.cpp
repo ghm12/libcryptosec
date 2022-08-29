@@ -1,5 +1,8 @@
+#include <libcryptosec/certificate/AuthorityKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/SubjectKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/KeyUsageExtension.h>
+#include <libcryptosec/certificate/IssuerAlternativeNameExtension.h>
+#include <libcryptosec/certificate/SubjectAlternativeNameExtension.h>
 #include <libcryptosec/certificate/BasicConstraintsExtension.h>
 #include <libcryptosec/certificate/CRLNumberExtension.h>
 
@@ -36,64 +39,61 @@ protected:
         ASSERT_TRUE(ext.isCritical());
     }
 
-    static std::vector<bool> keyUsageValues;
     static long basicConstraintsPathLen;
-    static unsigned long crlSerialNumber;
-    static unsigned long crlSerialNew;
+    static unsigned long serialNumber;
+    static unsigned long serialNew;
     static char* keyIdentifierValue;
+    static std::string rfcName;
+    static std::string dnsName;
 };
 
 /*
  * Initialization of variables used in the tests
  */
-
 long ExtensionsTest::basicConstraintsPathLen = 30;
-unsigned long ExtensionsTest::crlSerialNumber = 1234567890;
-unsigned long ExtensionsTest::crlSerialNew = 9876543210;
+unsigned long ExtensionsTest::serialNumber = 1234567890;
+unsigned long ExtensionsTest::serialNew = 9876543210;
 char* ExtensionsTest::keyIdentifierValue = (char *) "B132247BE75A265B9CB80BBD3474CBB7A4FA40CC";
+std::string ExtensionsTest::rfcName = "example@mail.com";
+std::string ExtensionsTest::dnsName = "8.8.8.8";
 
 /**
- * @brief Tests SubjectKeyIdentifierExtension general and specific functionalities
+ * @brief Tests AuthorityKeyIdentifierExtension general and specific functionalities
  */
-TEST_F(ExtensionsTest, SubjectKeyIdentifier) {
-    SubjectKeyIdentifierExtension ext;
+TEST_F(ExtensionsTest, AuthorityKeyIdentifier) {
+    AuthorityKeyIdentifierExtension ext;
+    long serialNumber;
+    GeneralNames gns;
+    GeneralName gn;
     X509_EXTENSION *extX509;
+    std::vector<GeneralName> generalNames;
 
     ByteArray ba(ExtensionsTest::keyIdentifierValue);
     ByteArray value;
 
-    ext.setKeyIdentifier(ba);
-    value = ext.getKeyIdentifier();
-    extX509 = ext.getX509Extension();
-    SubjectKeyIdentifierExtension fromX509(extX509);
+    gn.setRfc822Name(ExtensionsTest::rfcName);
+    gns.addGeneralName(gn);
 
-    generalTests(ext, Extension::SUBJECT_KEY_IDENTIFIER);
+    gn.setDnsName(ExtensionsTest::dnsName);
+    gns.addGeneralName(gn);
+
+    ext.setKeyIdentifier(ba);
+    ext.setAuthorityCertIssuer(gns);
+    ext.setAuthorityCertSerialNumber(ExtensionsTest::serialNumber);
+
+    value = ext.getKeyIdentifier();
+    gns = ext.getAuthorityCertIssuer();
+    generalNames = gns.getGeneralNames();
+    serialNumber = ext.getAuthorityCertSerialNumber();
+    extX509 = ext.getX509Extension();
+    AuthorityKeyIdentifierExtension fromX509(extX509);
+
+    generalTests(ext, Extension::AUTHORITY_KEY_IDENTIFIER);
 
     ASSERT_EQ(value.toString(), ExtensionsTest::keyIdentifierValue);
-    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
-}
-
-/**
- * @brief Tests KeyUsageExtension general and specific functionalities
- */
-TEST_F(ExtensionsTest, KeyUsage) {
-    KeyUsageExtension ext;
-    X509_EXTENSION *extX509;
-
-    ext.setUsage(KeyUsageExtension::DIGITAL_SIGNATURE, true);
-    ext.setUsage(KeyUsageExtension::ENCIPHER_ONLY, true);
-
-    extX509 = ext.getX509Extension();
-    KeyUsageExtension fromX509(extX509);
-
-    generalTests(ext, Extension::KEY_USAGE);
-
-    ASSERT_TRUE(ext.getUsage(KeyUsageExtension::DIGITAL_SIGNATURE));
-    ASSERT_TRUE(ext.getUsage(KeyUsageExtension::ENCIPHER_ONLY));
-
-    ASSERT_FALSE(ext.getUsage(KeyUsageExtension::KEY_ENCIPHERMENT));
-    ASSERT_FALSE(ext.getUsage(KeyUsageExtension::CRL_SIGN));
-
+    ASSERT_EQ(generalNames[0].getRfc822Name(), ExtensionsTest::rfcName);
+    ASSERT_EQ(generalNames[1].getDnsName(), ExtensionsTest::dnsName);
+    ASSERT_EQ(serialNumber, ExtensionsTest::serialNumber);
     ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
 }
 
@@ -123,21 +123,125 @@ TEST_F(ExtensionsTest, BasicConstraints) {
 /**
  * @brief Tests CRLNumberExtension general and specific functionalities
  */
+/* Few things to do in libcryptosec */
 TEST_F(ExtensionsTest, CRLNumber) {
-    CRLNumberExtension ext(ExtensionsTest::crlSerialNumber);
-    X509_EXTENSION *extX509;
+    CRLNumberExtension ext(ExtensionsTest::serialNumber);
+    // X509_EXTENSION *extX509;
 
     /* TODO in libcryptosec
     extX509 = ext.getX509Extension();
-    CRLNumberExtension fromX509(extX509);
+    CRLNumberExtension fromX509(extX509); */
 
-    generalTests(ext, Extension::BASIC_CONSTRAINTS);
+    generalTests(ext, Extension::CRL_NUMBER);
 
-    ASSERT_EQ(ext.getSerial(), ExtensionsTest::crlSerialNumber);
-    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+    ASSERT_EQ(ext.getSerial(), ExtensionsTest::serialNumber);
+    // ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
 
-    ext.setSerial(ExtensionsTest::crlSerialNew);
-    ASSERT_EQ(ext.getSerial(), ExtensionsTest::crlSerialNew); */
+    ext.setSerial(ExtensionsTest::serialNew);
+    ASSERT_EQ(ext.getSerial(), ExtensionsTest::serialNew);
 }
 
+/**
+ * @brief Tests IssuerAlternativeNameExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, IssuerAlternativeName) {
+    IssuerAlternativeNameExtension ext;
+    GeneralNames gns;
+    GeneralName gn;
+    X509_EXTENSION *extX509;
+    std::vector<GeneralName> generalNames;
 
+    gn.setRfc822Name(ExtensionsTest::rfcName);
+    gns.addGeneralName(gn);
+
+    gn.setDnsName(ExtensionsTest::dnsName);
+    gns.addGeneralName(gn);
+
+    ext.setIssuerAltName(gns);
+
+    gns = ext.getIssuerAltName();
+    generalNames = gns.getGeneralNames();
+    extX509 = ext.getX509Extension();
+    IssuerAlternativeNameExtension fromX509(extX509);
+
+    generalTests(ext, Extension::ISSUER_ALTERNATIVE_NAME);
+
+    ASSERT_EQ(generalNames[0].getRfc822Name(), ExtensionsTest::rfcName);
+    ASSERT_EQ(generalNames[1].getDnsName(), ExtensionsTest::dnsName);
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests KeyUsageExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, KeyUsage) {
+    KeyUsageExtension ext;
+    X509_EXTENSION *extX509;
+
+    ext.setUsage(KeyUsageExtension::DIGITAL_SIGNATURE, true);
+    ext.setUsage(KeyUsageExtension::ENCIPHER_ONLY, true);
+
+    extX509 = ext.getX509Extension();
+    KeyUsageExtension fromX509(extX509);
+
+    generalTests(ext, Extension::KEY_USAGE);
+
+    ASSERT_TRUE(ext.getUsage(KeyUsageExtension::DIGITAL_SIGNATURE));
+    ASSERT_TRUE(ext.getUsage(KeyUsageExtension::ENCIPHER_ONLY));
+
+    ASSERT_FALSE(ext.getUsage(KeyUsageExtension::KEY_ENCIPHERMENT));
+    ASSERT_FALSE(ext.getUsage(KeyUsageExtension::CRL_SIGN));
+
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests SubjectAlternativeNameExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, SubjectAlternativeName) {
+    SubjectAlternativeNameExtension ext;
+    GeneralNames gns;
+    GeneralName gn;
+    X509_EXTENSION *extX509;
+    std::vector<GeneralName> generalNames;
+
+    gn.setRfc822Name(ExtensionsTest::rfcName);
+    gns.addGeneralName(gn);
+
+    gn.setDnsName(ExtensionsTest::dnsName);
+    gns.addGeneralName(gn);
+
+    ext.setSubjectAltName(gns);
+
+    gns = ext.getSubjectAltName();
+    generalNames = gns.getGeneralNames();
+    extX509 = ext.getX509Extension();
+    SubjectAlternativeNameExtension fromX509(extX509);
+
+    generalTests(ext, Extension::SUBJECT_ALTERNATIVE_NAME);
+
+    ASSERT_EQ(generalNames[0].getRfc822Name(), ExtensionsTest::rfcName);
+    ASSERT_EQ(generalNames[1].getDnsName(), ExtensionsTest::dnsName);
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests SubjectKeyIdentifierExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, SubjectKeyIdentifier) {
+    SubjectKeyIdentifierExtension ext;
+    X509_EXTENSION *extX509;
+
+    ByteArray ba(ExtensionsTest::keyIdentifierValue);
+    ByteArray value;
+
+    ext.setKeyIdentifier(ba);
+    value = ext.getKeyIdentifier();
+    extX509 = ext.getX509Extension();
+    SubjectKeyIdentifierExtension fromX509(extX509);
+
+    generalTests(ext, Extension::SUBJECT_KEY_IDENTIFIER);
+
+    ASSERT_EQ(value.toString(), ExtensionsTest::keyIdentifierValue);
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+}
