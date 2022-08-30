@@ -1,10 +1,13 @@
 #include <libcryptosec/certificate/AuthorityKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/SubjectKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/KeyUsageExtension.h>
+#include <libcryptosec/certificate/ExtendedKeyUsageExtension.h>
 #include <libcryptosec/certificate/IssuerAlternativeNameExtension.h>
 #include <libcryptosec/certificate/SubjectAlternativeNameExtension.h>
 #include <libcryptosec/certificate/BasicConstraintsExtension.h>
 #include <libcryptosec/certificate/CRLNumberExtension.h>
+#include <libcryptosec/certificate/DeltaCRLIndicatorExtension.h>
+#include <libcryptosec/certificate/ObjectIdentifierFactory.h>
 
 #include <sstream>
 #include <gtest/gtest.h>
@@ -45,6 +48,8 @@ protected:
     static char* keyIdentifierValue;
     static std::string rfcName;
     static std::string dnsName;
+    static std::string extendedKeyUsageOne;
+    static std::string extendedKeyUsageTwo;
 };
 
 /*
@@ -56,6 +61,8 @@ unsigned long ExtensionsTest::serialNew = 9876543210;
 char* ExtensionsTest::keyIdentifierValue = (char *) "B132247BE75A265B9CB80BBD3474CBB7A4FA40CC";
 std::string ExtensionsTest::rfcName = "example@mail.com";
 std::string ExtensionsTest::dnsName = "8.8.8.8";
+std::string ExtensionsTest::extendedKeyUsageOne = "1.3.6.1.5.5.7.3.1";
+std::string ExtensionsTest::extendedKeyUsageTwo = "1.3.6.1.5.5.7.3.4";
 
 /**
  * @brief Tests AuthorityKeyIdentifierExtension general and specific functionalities
@@ -139,6 +146,57 @@ TEST_F(ExtensionsTest, CRLNumber) {
 
     ext.setSerial(ExtensionsTest::serialNew);
     ASSERT_EQ(ext.getSerial(), ExtensionsTest::serialNew);
+}
+
+/**
+ * @brief Tests DeltaCRLIndicatorExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, DeltaCRLIndicator) {
+    DeltaCRLIndicatorExtension ext(ExtensionsTest::serialNumber);
+    X509_EXTENSION *extX509;
+
+    extX509 = ext.getX509Extension();
+    DeltaCRLIndicatorExtension fromX509(extX509);
+
+    generalTests(ext, Extension::DELTA_CRL_INDICATOR);
+
+    ASSERT_EQ(ext.getSerial(), ExtensionsTest::serialNumber);
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+
+    ext.setSerial(ExtensionsTest::serialNew);
+    ASSERT_EQ(ext.getSerial(), ExtensionsTest::serialNew);
+}
+
+/**
+ * @brief Tests ExtendedKeyUsageExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, ExtendedKeyUsage) {
+   ExtendedKeyUsageExtension ext;
+    X509_EXTENSION *extX509;
+    ObjectIdentifier oid;
+    std::vector<ObjectIdentifier> usage;
+
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::extendedKeyUsageOne);
+    ext.addUsage(oid);
+
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::extendedKeyUsageTwo);
+    ext.addUsage(oid);
+
+    extX509 = ext.getX509Extension();
+    ExtendedKeyUsageExtension fromX509(extX509);
+
+    generalTests(ext, Extension::EXTENDED_KEY_USAGE);
+
+    usage = ext.getUsages();
+    ASSERT_TRUE(usage.size() == 2);
+    ASSERT_EQ(usage[0].getOid(), ExtensionsTest::extendedKeyUsageOne);
+    ASSERT_EQ(usage[1].getOid(), ExtensionsTest::extendedKeyUsageTwo);
+
+    //fromX509 has usages reversed from original.
+    usage = fromX509.getUsages();
+    ASSERT_TRUE(usage.size() == 2);
+    ASSERT_EQ(usage[1].getOid(), ExtensionsTest::extendedKeyUsageOne);
+    ASSERT_EQ(usage[0].getOid(), ExtensionsTest::extendedKeyUsageTwo);
 }
 
 /**
