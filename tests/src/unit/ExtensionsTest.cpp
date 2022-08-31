@@ -1,4 +1,5 @@
 #include <libcryptosec/certificate/AuthorityKeyIdentifierExtension.h>
+#include <libcryptosec/certificate/AuthorityInformationAccessExtension.h>
 #include <libcryptosec/certificate/SubjectKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/KeyUsageExtension.h>
 #include <libcryptosec/certificate/ExtendedKeyUsageExtension.h>
@@ -51,6 +52,7 @@ protected:
     static std::string dnsName;
     static std::string extendedKeyUsageOne;
     static std::string extendedKeyUsageTwo;
+    static std::string authorityAccessInfo;
     static std::string subjectAccessInfo;
 };
 
@@ -65,7 +67,65 @@ std::string ExtensionsTest::rfcName = "example@mail.com";
 std::string ExtensionsTest::dnsName = "8.8.8.8";
 std::string ExtensionsTest::extendedKeyUsageOne = "1.3.6.1.5.5.7.3.1";
 std::string ExtensionsTest::extendedKeyUsageTwo = "1.3.6.1.5.5.7.3.4";
+std::string ExtensionsTest::authorityAccessInfo = "1.3.6.1.5.5.7.1.1";
 std::string ExtensionsTest::subjectAccessInfo = "1.3.6.1.5.5.7.1.11";
+
+/**
+ * @brief Tests AccessDescription class for usage in InformationAccessExtension
+ */
+TEST_F(ExtensionsTest, AccessDescription) {
+    AccessDescription ad;
+    AccessDescription fromX509;
+    ACCESS_DESCRIPTION *desc;
+    GeneralName gn;
+    ObjectIdentifier oid;
+
+    gn.setDnsName(ExtensionsTest::dnsName);
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::subjectAccessInfo);
+
+    ad.setAccessLocation(gn);
+    ad.setAccessMethod(oid);
+
+    desc = ad.getAccessDescription();
+    fromX509 = AccessDescription(desc);
+
+    ASSERT_EQ(ad.getAccessLocation().getDnsName(), ExtensionsTest::dnsName);
+    ASSERT_EQ(ad.getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfo);
+    ASSERT_EQ(ad.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests SubjectInformationAccessExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, AuthorityInformationAccess) {
+    AuthorityInformationAccessExtension ext;
+    AuthorityInformationAccessExtension fromX509;
+    X509_EXTENSION *extX509;
+    AccessDescription ad;
+    GeneralName gn;
+    ObjectIdentifier oid;
+    std::vector< AccessDescription > accessDescriptions;
+
+    gn.setDnsName(ExtensionsTest::dnsName);
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::authorityAccessInfo);
+    ad.setAccessLocation(gn);
+    ad.setAccessMethod(oid);
+    ext.addAccessDescription(ad);
+
+    gn.setRfc822Name(ExtensionsTest::rfcName);
+    ad.setAccessLocation(gn);
+    ext.addAccessDescription(ad);
+
+    extX509 = ext.getX509Extension();
+    fromX509 = AuthorityInformationAccessExtension(extX509);
+
+    accessDescriptions = ext.getAccessDescriptions();
+    ASSERT_EQ(accessDescriptions[0].getAccessLocation().getDnsName(), ExtensionsTest::dnsName);
+    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getOid(), ExtensionsTest::authorityAccessInfo);
+    ASSERT_EQ(accessDescriptions[1].getAccessLocation().getDnsName(), ExtensionsTest::rfcName);
+    ASSERT_EQ(accessDescriptions[1].getAccessMethod().getOid(), ExtensionsTest::authorityAccessInfo);
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+}
 
 /**
  * @brief Tests AuthorityKeyIdentifierExtension general and specific functionalities
@@ -284,30 +344,6 @@ TEST_F(ExtensionsTest, SubjectAlternativeName) {
     ASSERT_EQ(generalNames[0].getRfc822Name(), ExtensionsTest::rfcName);
     ASSERT_EQ(generalNames[1].getDnsName(), ExtensionsTest::dnsName);
     ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
-}
-
-/**
- * @brief Tests AccessDescription class for usage in SubjectInformationAccessExtension
- */
-TEST_F(ExtensionsTest, AccessDescription) {
-    AccessDescription ad;
-    AccessDescription fromX509;
-    ACCESS_DESCRIPTION *desc;
-    GeneralName gn;
-    ObjectIdentifier oid;
-
-    gn.setDnsName(ExtensionsTest::dnsName);
-    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::subjectAccessInfo);
-
-    ad.setAccessLocation(gn);
-    ad.setAccessMethod(oid);
-
-    desc = ad.getAccessDescription();
-    fromX509 = AccessDescription(desc);
-
-    ASSERT_EQ(ad.getAccessLocation().getDnsName(), ExtensionsTest::dnsName);
-    ASSERT_EQ(ad.getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfo);
-    ASSERT_EQ(ad.getXmlEncoded(), fromX509.getXmlEncoded());
 }
 
 /**
