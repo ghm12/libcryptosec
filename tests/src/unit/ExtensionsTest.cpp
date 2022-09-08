@@ -1,5 +1,6 @@
 #include <libcryptosec/certificate/AuthorityKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/AuthorityInformationAccessExtension.h>
+#include <libcryptosec/certificate/CertificatePoliciesExtension.h>
 #include <libcryptosec/certificate/SubjectKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/KeyUsageExtension.h>
 #include <libcryptosec/certificate/ExtendedKeyUsageExtension.h>
@@ -48,12 +49,22 @@ protected:
     static unsigned long serialNumber;
     static unsigned long serialNew;
     static char* keyIdentifierValue;
+    static std::vector<long> noticeNumbers;
     static std::string rfcName;
     static std::string dnsName;
-    static std::string extendedKeyUsageOne;
-    static std::string extendedKeyUsageTwo;
-    static std::string authorityAccessInfo;
-    static std::string subjectAccessInfo;
+    static std::string orgName;
+    static std::string explicitText;
+    static std::string extendedKeyUsageOneOid;
+    static std::string extendedKeyUsageOneName;
+    static std::string extendedKeyUsageTwoOid;
+    static std::string extendedKeyUsageTwoName;
+    static std::string authorityAccessInfoOid;
+    static std::string subjectAccessInfoOid;
+    static std::string policyInformationOid;
+    static std::string subjectAccessInfoName;
+    static std::string authorityAccessInfoName;
+    static std::string policyInformationName;
+    static std::string cpsUri;
 };
 
 /*
@@ -63,12 +74,22 @@ long ExtensionsTest::basicConstraintsPathLen = 30;
 unsigned long ExtensionsTest::serialNumber = 1234567890;
 unsigned long ExtensionsTest::serialNew = 9876543210;
 char* ExtensionsTest::keyIdentifierValue = (char *) "B132247BE75A265B9CB80BBD3474CBB7A4FA40CC";
+std::vector<long> ExtensionsTest::noticeNumbers{1234567890, 9876543210};
 std::string ExtensionsTest::rfcName = "example@mail.com";
 std::string ExtensionsTest::dnsName = "8.8.8.8";
-std::string ExtensionsTest::extendedKeyUsageOne = "1.3.6.1.5.5.7.3.1";
-std::string ExtensionsTest::extendedKeyUsageTwo = "1.3.6.1.5.5.7.3.4";
-std::string ExtensionsTest::authorityAccessInfo = "1.3.6.1.5.5.7.1.1";
-std::string ExtensionsTest::subjectAccessInfo = "1.3.6.1.5.5.7.1.11";
+std::string ExtensionsTest::orgName = "Org Name";
+std::string ExtensionsTest::explicitText = "Explicit Text.";
+std::string ExtensionsTest::extendedKeyUsageOneOid = "1.3.6.1.5.5.7.3.1";
+std::string ExtensionsTest::extendedKeyUsageOneName = "serverAuth";
+std::string ExtensionsTest::extendedKeyUsageTwoOid = "1.3.6.1.5.5.7.3.4";
+std::string ExtensionsTest::extendedKeyUsageTwoName = "emailProtection";
+std::string ExtensionsTest::authorityAccessInfoOid = "1.3.6.1.5.5.7.1.1";
+std::string ExtensionsTest::authorityAccessInfoName = "authorityInfoAccess";
+std::string ExtensionsTest::subjectAccessInfoOid = "1.3.6.1.5.5.7.1.11";
+std::string ExtensionsTest::subjectAccessInfoName = "subjectInfoAccess";
+std::string ExtensionsTest::policyInformationOid = "1.3.6.1.5.5.7.14.1";
+std::string ExtensionsTest::policyInformationName = "1";
+std::string ExtensionsTest::cpsUri = "http://www.example.com";
 
 /**
  * @brief Tests AccessDescription class for usage in InformationAccessExtension
@@ -81,7 +102,7 @@ TEST_F(ExtensionsTest, AccessDescription) {
     ObjectIdentifier oid;
 
     gn.setDnsName(ExtensionsTest::dnsName);
-    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::subjectAccessInfo);
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::subjectAccessInfoOid);
 
     ad.setAccessLocation(gn);
     ad.setAccessMethod(oid);
@@ -90,7 +111,8 @@ TEST_F(ExtensionsTest, AccessDescription) {
     fromX509 = AccessDescription(desc);
 
     ASSERT_EQ(ad.getAccessLocation().getDnsName(), ExtensionsTest::dnsName);
-    ASSERT_EQ(ad.getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfo);
+    ASSERT_EQ(ad.getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfoOid);
+    ASSERT_EQ(ad.getAccessMethod().getName(), ExtensionsTest::subjectAccessInfoName);
     ASSERT_EQ(ad.getXmlEncoded(), fromX509.getXmlEncoded());
 }
 
@@ -107,7 +129,7 @@ TEST_F(ExtensionsTest, AuthorityInformationAccess) {
     std::vector< AccessDescription > accessDescriptions;
 
     gn.setDnsName(ExtensionsTest::dnsName);
-    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::authorityAccessInfo);
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::authorityAccessInfoOid);
     ad.setAccessLocation(gn);
     ad.setAccessMethod(oid);
     ext.addAccessDescription(ad);
@@ -119,11 +141,15 @@ TEST_F(ExtensionsTest, AuthorityInformationAccess) {
     extX509 = ext.getX509Extension();
     fromX509 = AuthorityInformationAccessExtension(extX509);
 
+    generalTests(ext, Extension::AUTHORITY_INFORMATION_ACCESS);
+
     accessDescriptions = ext.getAccessDescriptions();
     ASSERT_EQ(accessDescriptions[0].getAccessLocation().getDnsName(), ExtensionsTest::dnsName);
-    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getOid(), ExtensionsTest::authorityAccessInfo);
+    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getOid(), ExtensionsTest::authorityAccessInfoOid);
+    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getName(), ExtensionsTest::authorityAccessInfoName);
     ASSERT_EQ(accessDescriptions[1].getAccessLocation().getDnsName(), ExtensionsTest::rfcName);
-    ASSERT_EQ(accessDescriptions[1].getAccessMethod().getOid(), ExtensionsTest::authorityAccessInfo);
+    ASSERT_EQ(accessDescriptions[1].getAccessMethod().getOid(), ExtensionsTest::authorityAccessInfoOid);
+    ASSERT_EQ(accessDescriptions[1].getAccessMethod().getName(), ExtensionsTest::authorityAccessInfoName);
     ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
 }
 
@@ -191,6 +217,76 @@ TEST_F(ExtensionsTest, BasicConstraints) {
 }
 
 /**
+ * @brief Tests UserNotice for usage in PolicyQualifierInfo
+ */
+TEST_F(ExtensionsTest, UserNotice) {
+    UserNotice un;
+    UserNotice fromX509;
+    USERNOTICE *notice;
+    std::pair<std::string, std::vector<long> > noticeRef;
+
+    un.setNoticeReference(ExtensionsTest::orgName, ExtensionsTest::noticeNumbers);
+    un.setExplicitText(ExtensionsTest::explicitText);
+
+    noticeRef = un.getNoticeReference();
+    notice = un.getUserNotice();
+    fromX509 = UserNotice(notice);
+
+    ASSERT_EQ(noticeRef.first, ExtensionsTest::orgName);
+    ASSERT_EQ(noticeRef.second[0], ExtensionsTest::noticeNumbers[0]);
+    ASSERT_EQ(noticeRef.second[1], ExtensionsTest::noticeNumbers[1]);
+    ASSERT_EQ(un.getExplicitText(), ExtensionsTest::explicitText);
+    ASSERT_EQ(un.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests PolicyQualifierInfo for usage in PolicyInformation
+ */
+TEST_F(ExtensionsTest, PolicyQualifierInfo) {
+    PolicyQualifierInfo info;
+    PolicyQualifierInfo fromX509;
+    UserNotice un;
+    POLICYQUALINFO *policyinfo;
+
+    un.setNoticeReference(ExtensionsTest::orgName, ExtensionsTest::noticeNumbers);
+    un.setExplicitText(ExtensionsTest::explicitText);
+
+    info.setCpsUri(ExtensionsTest::cpsUri);
+    ASSERT_EQ(info.getCpsUri(), ExtensionsTest::cpsUri);
+    ASSERT_EQ(info.getType(), PolicyQualifierInfo::CPS_URI);
+
+    policyinfo = info.getPolicyQualInfo();
+    fromX509 = PolicyQualifierInfo(policyinfo);
+    ASSERT_EQ(info.getXmlEncoded(), fromX509.getXmlEncoded());
+
+    info.setUserNotice(un);
+    ASSERT_EQ(info.getUserNotice().getExplicitText(), ExtensionsTest::explicitText);
+    ASSERT_EQ(info.getType(), PolicyQualifierInfo::USER_NOTICE);
+
+    policyinfo = info.getPolicyQualInfo();
+    fromX509 = PolicyQualifierInfo(policyinfo);
+    ASSERT_EQ(info.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests CertificatePoliciesExtension general and specific functionalities
+ */
+TEST_F(ExtensionsTest, CertificatePolicies) {
+    CertificatePoliciesExtension ext;
+    CertificatePoliciesExtension fromX509;
+    PolicyInformation policy;
+    X509_EXTENSION *extX509;
+    std::vector<PolicyInformation> policies;
+
+    extX509 = ext.getX509Extension();
+    fromX509 = CertificatePoliciesExtension(extX509);
+
+    generalTests(ext, Extension::CERTIFICATE_POLICIES);
+
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
  * @brief Tests CRLNumberExtension general and specific functionalities
  */
 /* Few things to do in libcryptosec */
@@ -239,10 +335,10 @@ TEST_F(ExtensionsTest, ExtendedKeyUsage) {
     ObjectIdentifier oid;
     std::vector<ObjectIdentifier> usage;
 
-    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::extendedKeyUsageOne);
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::extendedKeyUsageOneOid);
     ext.addUsage(oid);
 
-    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::extendedKeyUsageTwo);
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::extendedKeyUsageTwoOid);
     ext.addUsage(oid);
 
     extX509 = ext.getX509Extension();
@@ -252,14 +348,18 @@ TEST_F(ExtensionsTest, ExtendedKeyUsage) {
 
     usage = ext.getUsages();
     ASSERT_TRUE(usage.size() == 2);
-    ASSERT_EQ(usage[0].getOid(), ExtensionsTest::extendedKeyUsageOne);
-    ASSERT_EQ(usage[1].getOid(), ExtensionsTest::extendedKeyUsageTwo);
+    ASSERT_EQ(usage[0].getOid(), ExtensionsTest::extendedKeyUsageOneOid);
+    ASSERT_EQ(usage[0].getName(), ExtensionsTest::extendedKeyUsageOneName);
+    ASSERT_EQ(usage[1].getOid(), ExtensionsTest::extendedKeyUsageTwoOid);
+    ASSERT_EQ(usage[1].getName(), ExtensionsTest::extendedKeyUsageTwoName);
 
     //fromX509 has usage order reversed from original.
     usage = fromX509.getUsages();
     ASSERT_TRUE(usage.size() == 2);
-    ASSERT_EQ(usage[1].getOid(), ExtensionsTest::extendedKeyUsageOne);
-    ASSERT_EQ(usage[0].getOid(), ExtensionsTest::extendedKeyUsageTwo);
+    ASSERT_EQ(usage[1].getOid(), ExtensionsTest::extendedKeyUsageOneOid);
+    ASSERT_EQ(usage[1].getName(), ExtensionsTest::extendedKeyUsageOneName);
+    ASSERT_EQ(usage[0].getOid(), ExtensionsTest::extendedKeyUsageTwoOid);
+    ASSERT_EQ(usage[0].getName(), ExtensionsTest::extendedKeyUsageTwoName);
 }
 
 /**
@@ -359,7 +459,7 @@ TEST_F(ExtensionsTest, SubjectInformationAccess) {
     std::vector< AccessDescription > accessDescriptions;
 
     gn.setDnsName(ExtensionsTest::dnsName);
-    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::subjectAccessInfo);
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::subjectAccessInfoOid);
     ad.setAccessLocation(gn);
     ad.setAccessMethod(oid);
     ext.addAccessDescription(ad);
@@ -371,11 +471,15 @@ TEST_F(ExtensionsTest, SubjectInformationAccess) {
     extX509 = ext.getX509Extension();
     fromX509 = SubjectInformationAccessExtension(extX509);
 
+    generalTests(ext, Extension::SUBJECT_INFORMATION_ACCESS);
+
     accessDescriptions = ext.getAccessDescriptions();
     ASSERT_EQ(accessDescriptions[0].getAccessLocation().getDnsName(), ExtensionsTest::dnsName);
-    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfo);
+    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfoOid);
+    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getName(), ExtensionsTest::subjectAccessInfoName);
     ASSERT_EQ(accessDescriptions[1].getAccessLocation().getDnsName(), ExtensionsTest::rfcName);
-    ASSERT_EQ(accessDescriptions[1].getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfo);
+    ASSERT_EQ(accessDescriptions[1].getAccessMethod().getOid(), ExtensionsTest::subjectAccessInfoOid);
+    ASSERT_EQ(accessDescriptions[0].getAccessMethod().getName(), ExtensionsTest::subjectAccessInfoName);
     ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
 }
 
