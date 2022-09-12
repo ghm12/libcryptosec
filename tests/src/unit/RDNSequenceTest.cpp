@@ -43,14 +43,27 @@ protected:
  * Initialization of variables used in the tests
  */
 std::string RDNSequenceTest::countryName = "C";
-std::string RDNSequenceTest::countryOne = "Brazil";
-std::string RDNSequenceTest::countryTwo = "lizarB";
+std::string RDNSequenceTest::countryOne = "BR";
+std::string RDNSequenceTest::countryTwo = "RB";
 
 std::string RDNSequenceTest::commonNameName = "CN";
 std::string RDNSequenceTest::commonNameOne = "Common Name";
 std::string RDNSequenceTest::commonNameTwo = "emaN nommoC";
 
-std::string RDNSequenceTest::xmlEncoded = "<RDNSequence>\n\t<countryName>Brazil</countryName>\n\t<commonName>emaN nommoC</commonName>\n</RDNSequence>\n";
+std::string RDNSequenceTest::xmlEncoded = "<RDNSequence>\n\t<countryName>BR</countryName>\n\t<commonName>emaN nommoC</commonName>\n</RDNSequence>\n";
+
+TEST_F(RDNSequenceTest, FromX509Name) {
+    X509_NAME *name;
+    RDNSequence fromX509;
+
+    rdn->addEntry(RDNSequence::COUNTRY, RDNSequenceTest::countryOne);
+    rdn->addEntry(RDNSequence::COMMON_NAME, RDNSequenceTest::commonNameOne);
+
+    name = rdn->getX509Name();
+    fromX509 = RDNSequence(name);
+
+    ASSERT_EQ(rdn->getXmlEncoded(), fromX509.getXmlEncoded());
+}
 
 /**
  * @brief Tests adding and getting specific entries from a RDNSequence

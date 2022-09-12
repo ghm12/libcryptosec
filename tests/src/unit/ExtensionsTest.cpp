@@ -389,8 +389,8 @@ TEST_F(ExtensionsTest, DistributionPointName) {
     rdn = fromX509.getNameRelativeToCrlIssuer();
     ASSERT_EQ(distPointName.getType(), DistributionPointName::RELATIVE_NAME);
     ASSERT_EQ(fromX509.getType(), DistributionPointName::RELATIVE_NAME);
-    //ASSERT_EQ(rdn.getEntries(RDNSequence::ORGANIZATION)[0], ExtensionsTest::orgName);
-    //ASSERT_EQ(rdn.getEntries(RDNSequence::EMAIL)[0], ExtensionsTest::rfcName);
+    ASSERT_EQ(rdn.getEntries(RDNSequence::ORGANIZATION)[0], ExtensionsTest::orgName);
+    ASSERT_EQ(rdn.getEntries(RDNSequence::EMAIL)[0], ExtensionsTest::rfcName);
 
     distPointName.setFullName(gNames);
     dpName = distPointName.getDistPointName();

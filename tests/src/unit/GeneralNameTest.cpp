@@ -37,7 +37,7 @@ std::string GeneralNameTest::otherNameData = "01234567891011";
 std::string GeneralNameTest::rfcName = "example@mail.com";
 std::string GeneralNameTest::dnsName = "8.8.8.8";
 std::string GeneralNameTest::directoryCN = "Example Name";
-std::string GeneralNameTest::uriName = "mailto:example@mail.com";
+std::string GeneralNameTest::uriName = "www.example.com";
 std::string GeneralNameTest::ipAddress = "127.0.0.1";
 std::string GeneralNameTest::ridName = "2.5.4.3";
 

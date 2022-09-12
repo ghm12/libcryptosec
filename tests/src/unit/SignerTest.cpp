@@ -1,5 +1,7 @@
 #include <libcryptosec/Signer.h>
 #include <libcryptosec/RSAKeyPair.h>
+#include <libcryptosec/DSAKeyPair.h>
+#include <libcryptosec/ECDSAKeyPair.h>
 
 #include <sstream>
 #include <gtest/gtest.h>
@@ -12,39 +14,40 @@ class SignerTest : public ::testing::Test {
 
 protected:
     virtual void SetUp() {
+        MessageDigest::loadMessageDigestAlgorithms();
     }
 
     virtual void TearDown() {
     }
 
-    void testSign() {
+    void testSigner(KeyPair keyPair, KeyPair wrongKeyPair, MessageDigest::Algorithm algorithm) {
+        PrivateKey *privKey;
+        PublicKey *pubKey;
+        PublicKey *wrongPubKey;
+        ByteArray hash;
+        ByteArray signature;
+        ByteArray emptySignature;
+
         EXPECT_NO_THROW(
-            RSAKeyPair keyPair(2048);
             privKey = keyPair.getPrivateKey();
             pubKey = keyPair.getPublicKey();
 
-            MessageDigest md(MessageDigest::SHA256);
+            MessageDigest md(algorithm);
             hash = md.doFinal(data);
 
-            signature = Signer::sign(*privKey, hash, MessageDigest::SHA256);
+            signature = Signer::sign(*privKey, hash, algorithm);
         );
 
-        ByteArray emptySignature;
-        RSAKeyPair wrongPair(1024);
-        PublicKey *wrongPubKey = wrongPair.getPublicKey();
+        wrongPubKey = wrongKeyPair.getPublicKey();
 
         ASSERT_TRUE(signature.size() > 0);
-        ASSERT_TRUE(Signer::verify(*pubKey, signature, hash, MessageDigest::SHA256));
+        ASSERT_TRUE(Signer::verify(*pubKey, signature, hash, algorithm));
 
-        ASSERT_FALSE(Signer::verify(*pubKey, emptySignature, hash, MessageDigest::SHA256));
-        ASSERT_FALSE(Signer::verify(*wrongPubKey, signature, hash, MessageDigest::SHA256));
+        ASSERT_FALSE(Signer::verify(*pubKey, emptySignature, hash, algorithm));
+        ASSERT_FALSE(Signer::verify(*wrongPubKey, signature, hash, algorithm));
     }
 
     static std::string data;
-    ByteArray hash;
-    ByteArray signature;
-    PrivateKey *privKey;
-    PublicKey *pubKey;
 };
 
 /*
@@ -53,8 +56,32 @@ protected:
 std::string SignerTest::data = "Arbitrary sentence.";
 
 /**
- * @brief Tests signing a hash and verifying it afterwards with the correct and wrong key.
+ * @brief Tests signing functions with RSA Key Pair with a few digest algorithms
  */
-TEST_F(SignerTest, SignAndVerify) {
-    testSign();
+TEST_F(SignerTest, RSA) {
+    RSAKeyPair keyPair(2048);
+    RSAKeyPair wrongKeyPair(2048);
+    
+    testSigner(keyPair, wrongKeyPair, MessageDigest::SHA256);
+    testSigner(keyPair, wrongKeyPair, MessageDigest::SHA512);
+}
+
+/**
+ * @brief Tests signing functions with DSA Key Pair with a few digest algorithms
+ */
+TEST_F(SignerTest, DSA) {
+    DSAKeyPair keyPair(512);
+    DSAKeyPair wrongKeyPair(512);
+    
+    //testSigner(keyPair, wrongKeyPair, MessageDigest::SHA1);
+}
+
+/**
+ * @brief Tests signing functions with ECDSA Key Pair with a few digest algorithms
+ */
+TEST_F(SignerTest, ECDSA) {
+    ECDSAKeyPair keyPair(AsymmetricKey::SECG_SECP256K1);
+    ECDSAKeyPair wrongKeyPair(AsymmetricKey::SECG_SECP256K1);
+    
+    //testSigner(keyPair, wrongKeyPair, MessageDigest::SHA1);
 }
