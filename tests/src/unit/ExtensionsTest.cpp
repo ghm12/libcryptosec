@@ -3,6 +3,7 @@
 #include <libcryptosec/certificate/CertificatePoliciesExtension.h>
 #include <libcryptosec/certificate/SubjectKeyIdentifierExtension.h>
 #include <libcryptosec/certificate/KeyUsageExtension.h>
+#include <libcryptosec/certificate/CRLDistributionPointsExtension.h>
 #include <libcryptosec/certificate/ExtendedKeyUsageExtension.h>
 #include <libcryptosec/certificate/IssuerAlternativeNameExtension.h>
 #include <libcryptosec/certificate/SubjectAlternativeNameExtension.h>
@@ -87,9 +88,9 @@ std::string ExtensionsTest::authorityAccessInfoOid = "1.3.6.1.5.5.7.1.1";
 std::string ExtensionsTest::authorityAccessInfoName = "authorityInfoAccess";
 std::string ExtensionsTest::subjectAccessInfoOid = "1.3.6.1.5.5.7.1.11";
 std::string ExtensionsTest::subjectAccessInfoName = "subjectInfoAccess";
-std::string ExtensionsTest::policyInformationOid = "1.3.6.1.5.5.7.14.1";
-std::string ExtensionsTest::policyInformationName = "1";
-std::string ExtensionsTest::cpsUri = "http://www.example.com";
+std::string ExtensionsTest::policyInformationOid = "1.3.6.1.5.5.7.14";
+//std::string ExtensionsTest::policyInformationName = "cp";
+std::string ExtensionsTest::cpsUri = "www.example.com";
 
 /**
  * @brief Tests AccessDescription class for usage in InformationAccessExtension
@@ -269,20 +270,74 @@ TEST_F(ExtensionsTest, PolicyQualifierInfo) {
 }
 
 /**
- * @brief Tests CertificatePoliciesExtension general and specific functionalities
+ * @brief Tests PolicyInformation for usage in CertificatePoliciesExtension
+ */
+TEST_F(ExtensionsTest, PolicyInformation) {
+    PolicyInformation info;
+    PolicyInformation fromX509;
+    ObjectIdentifier oid;
+    UserNotice un;
+    PolicyQualifierInfo qualInfo;
+    POLICYINFO *policyinfo;
+    std::vector< PolicyQualifierInfo > qualInfos;
+
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::policyInformationOid);
+    un.setNoticeReference(ExtensionsTest::orgName, ExtensionsTest::noticeNumbers);
+    un.setExplicitText(ExtensionsTest::explicitText);
+
+    qualInfo.setCpsUri(ExtensionsTest::cpsUri);
+    info.setPolicyIdentifier(oid);
+    info.addPolicyQualifierInfo(qualInfo);
+
+    qualInfo.setUserNotice(un);
+    info.addPolicyQualifierInfo(qualInfo);
+
+    policyinfo = info.getPolicyInfo();
+    fromX509 = PolicyInformation(policyinfo);
+
+    qualInfos = info.getPoliciesQualifierInfo();
+    ASSERT_EQ(info.getPolicyIdentifier().getOid(), ExtensionsTest::policyInformationOid);
+    ASSERT_EQ(qualInfos[0].getCpsUri(), ExtensionsTest::cpsUri);
+    ASSERT_EQ(qualInfos[1].getUserNotice().getExplicitText(), ExtensionsTest::explicitText);
+    ASSERT_EQ(info.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests CertificatePoliciesExtension
  */
 TEST_F(ExtensionsTest, CertificatePolicies) {
     CertificatePoliciesExtension ext;
     CertificatePoliciesExtension fromX509;
-    PolicyInformation policy;
+    PolicyInformation info;
+    ObjectIdentifier oid;
+    UserNotice un;
+    PolicyQualifierInfo qualInfo;
     X509_EXTENSION *extX509;
-    std::vector<PolicyInformation> policies;
+    std::vector< PolicyInformation > policies;
+
+    oid = ObjectIdentifierFactory::getObjectIdentifier(ExtensionsTest::policyInformationOid);
+    un.setNoticeReference(ExtensionsTest::orgName, ExtensionsTest::noticeNumbers);
+    un.setExplicitText(ExtensionsTest::explicitText);
+
+    qualInfo.setCpsUri(ExtensionsTest::cpsUri);
+    info.setPolicyIdentifier(oid);
+    info.addPolicyQualifierInfo(qualInfo);
+    ext.addPolicyInformation(info);
+
+    qualInfo.setUserNotice(un);
+    info.addPolicyQualifierInfo(qualInfo);
+    ext.addPolicyInformation(info);
 
     extX509 = ext.getX509Extension();
     fromX509 = CertificatePoliciesExtension(extX509);
 
     generalTests(ext, Extension::CERTIFICATE_POLICIES);
 
+    policies = ext.getPoliciesInformation();
+    qualInfo = policies[0].getPoliciesQualifierInfo()[0];
+    ASSERT_TRUE(policies.size() == 2);
+    ASSERT_EQ(policies[1].getPolicyIdentifier().getOid(), ExtensionsTest::policyInformationOid);
+    ASSERT_EQ(qualInfo.getCpsUri(), ExtensionsTest::cpsUri);
     ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
 }
 
@@ -305,6 +360,133 @@ TEST_F(ExtensionsTest, CRLNumber) {
 
     ext.setSerial(ExtensionsTest::serialNew);
     ASSERT_EQ(ext.getSerial(), ExtensionsTest::serialNew);
+}
+
+/**
+ * @brief Tests CRLNumberExtension general and specific functionalities
+ */
+/* Few things to do in libcryptosec */
+TEST_F(ExtensionsTest, DistributionPointName) {
+    DistributionPointName distPointName;
+    DistributionPointName fromX509;
+    DIST_POINT_NAME *dpName;
+    RDNSequence rdn;
+    GeneralName gn;
+    GeneralNames gNames;
+
+    rdn.addEntry(RDNSequence::ORGANIZATION, ExtensionsTest::orgName);
+    rdn.addEntry(RDNSequence::EMAIL, ExtensionsTest::rfcName);
+
+    gn.setRfc822Name(ExtensionsTest::rfcName);
+    gNames.addGeneralName(gn);
+    gn.setUniformResourceIdentifier(ExtensionsTest::cpsUri);
+    gNames.addGeneralName(gn);
+
+    distPointName.setNameRelativeToCrlIssuer(rdn);
+    dpName = distPointName.getDistPointName();
+    fromX509 = DistributionPointName(dpName);
+
+    rdn = fromX509.getNameRelativeToCrlIssuer();
+    ASSERT_EQ(distPointName.getType(), DistributionPointName::RELATIVE_NAME);
+    ASSERT_EQ(fromX509.getType(), DistributionPointName::RELATIVE_NAME);
+    //ASSERT_EQ(rdn.getEntries(RDNSequence::ORGANIZATION)[0], ExtensionsTest::orgName);
+    //ASSERT_EQ(rdn.getEntries(RDNSequence::EMAIL)[0], ExtensionsTest::rfcName);
+
+    distPointName.setFullName(gNames);
+    dpName = distPointName.getDistPointName();
+    fromX509 = DistributionPointName(dpName);
+
+    gNames = fromX509.getFullName();
+    ASSERT_EQ(distPointName.getType(), DistributionPointName::FULL_NAME);
+    ASSERT_EQ(fromX509.getType(), DistributionPointName::FULL_NAME);
+    ASSERT_EQ(gNames.getGeneralNames()[0].getRfc822Name(), ExtensionsTest::rfcName);
+    ASSERT_EQ(gNames.getGeneralNames()[1].getUniformResourceIdentifier(), ExtensionsTest::cpsUri);
+    ASSERT_EQ(distPointName.getXmlEncoded(), fromX509.getXmlEncoded());
+}
+
+/**
+ * @brief Tests CRLNumberExtension general and specific functionalities
+ */
+/* Few things to do in libcryptosec */
+TEST_F(ExtensionsTest, DistributionPoint) {
+    DistributionPoint distPoint;
+    DistributionPoint fromX509;
+    DistributionPointName distPointName;
+    DIST_POINT *dPoint;
+    GeneralName gn;
+    GeneralNames gNames;
+
+    gn.setRfc822Name(ExtensionsTest::rfcName);
+    gNames.addGeneralName(gn);
+    gn.setUniformResourceIdentifier(ExtensionsTest::cpsUri);
+    gNames.addGeneralName(gn);
+
+    distPointName.setFullName(gNames);
+    distPoint.setDistributionPointName(distPointName);
+    distPoint.setCrlIssuer(gNames);
+    distPoint.setReasonFlag(DistributionPoint::KEY_COMPROMISE, true);
+    distPoint.setReasonFlag(DistributionPoint::CESSATION_OF_OPERATION, true);
+
+    dPoint = distPoint.getDistPoint();
+    fromX509 = DistributionPoint(dPoint);
+
+    gNames = fromX509.getCrlIssuer();
+    ASSERT_EQ(gNames.getGeneralNames()[0].getRfc822Name(), ExtensionsTest::rfcName);
+    ASSERT_EQ(gNames.getGeneralNames()[1].getUniformResourceIdentifier(), ExtensionsTest::cpsUri);
+
+    gNames = fromX509.getDistributionPointName().getFullName();
+    ASSERT_EQ(gNames.getGeneralNames()[0].getRfc822Name(), ExtensionsTest::rfcName);
+    ASSERT_EQ(gNames.getGeneralNames()[1].getUniformResourceIdentifier(), ExtensionsTest::cpsUri);
+    
+    ASSERT_EQ(distPoint.getXmlEncoded(), fromX509.getXmlEncoded());
+
+    ASSERT_TRUE(distPoint.getReasonFlag(DistributionPoint::KEY_COMPROMISE));
+    ASSERT_TRUE(distPoint.getReasonFlag(DistributionPoint::CESSATION_OF_OPERATION));
+    ASSERT_FALSE(distPoint.getReasonFlag(DistributionPoint::UNUSED));
+    ASSERT_FALSE(distPoint.getReasonFlag(DistributionPoint::CA_COMPROMISE));
+}
+
+/**
+ * @brief Tests CRLNumberExtension general and specific functionalities
+ */
+/* Few things to do in libcryptosec */
+TEST_F(ExtensionsTest, CRLDistributionPoints) {
+    CRLDistributionPointsExtension ext;
+    CRLDistributionPointsExtension fromX509;
+    X509_EXTENSION *extX509;
+    DistributionPoint distPoint;
+    DistributionPointName distPointName;
+    GeneralName gn;
+    GeneralNames gNames;
+    std::vector< DistributionPoint > distPoints;
+
+    gn.setRfc822Name(ExtensionsTest::rfcName);
+    gNames.addGeneralName(gn);
+    gn.setUniformResourceIdentifier(ExtensionsTest::cpsUri);
+    gNames.addGeneralName(gn);
+
+    distPointName.setFullName(gNames);
+    distPoint.setDistributionPointName(distPointName);
+    distPoint.setCrlIssuer(gNames);
+    distPoint.setReasonFlag(DistributionPoint::KEY_COMPROMISE, true);
+
+    ext.addDistributionPoint(distPoint);
+    distPoint.setReasonFlag(DistributionPoint::CESSATION_OF_OPERATION, true);
+    ext.addDistributionPoint(distPoint);
+
+    extX509 = ext.getX509Extension();
+    fromX509 = CRLDistributionPointsExtension(extX509);
+
+    generalTests(ext, Extension::CRL_DISTRIBUTION_POINTS);
+
+    distPoints = ext.getDistributionPoints();
+    ASSERT_TRUE(distPoints[0].getReasonFlag(DistributionPoint::KEY_COMPROMISE));
+    ASSERT_FALSE(distPoints[0].getReasonFlag(DistributionPoint::CESSATION_OF_OPERATION));
+
+    ASSERT_TRUE(distPoints[1].getReasonFlag(DistributionPoint::KEY_COMPROMISE));
+    ASSERT_TRUE(distPoints[1].getReasonFlag(DistributionPoint::CESSATION_OF_OPERATION));
+
+    ASSERT_EQ(ext.getXmlEncoded(), fromX509.getXmlEncoded());
 }
 
 /**
