@@ -17,7 +17,7 @@ DistributionPointName::DistributionPointName(DIST_POINT_NAME *dpn)
 				break;
 			case 1:
 				this->type = DistributionPointName::RELATIVE_NAME;
-				this->relativeName = RDNSequence(dpn->name.relativename);
+				this->relativeName = RDNSequence(dpn->dpname);
 				break;
 			default:
 				this->type = DistributionPointName::UNDEFINED;
