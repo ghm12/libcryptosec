@@ -73,7 +73,7 @@ TEST_F(SignerTest, DSA) {
     DSAKeyPair keyPair(512);
     DSAKeyPair wrongKeyPair(512);
     
-    //testSigner(keyPair, wrongKeyPair, MessageDigest::SHA1);
+    //testSigner(keyPair, wrongKeyPair, MessageDigest::SHA256);
 }
 
 /**

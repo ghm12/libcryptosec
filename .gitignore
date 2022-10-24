@@ -35,3 +35,4 @@
 .*
 !/.gitignore
 !/.travis.yml
+*.gcov

@@ -331,19 +331,10 @@ void CertificateRequest::addExtension(Extension &extension)
 
 void CertificateRequest::addExtensions(std::vector<Extension *> &extensions)
 {
-	X509_EXTENSION *ext;
-	STACK_OF(X509_EXTENSION) *extensionsStack;
-	unsigned int i;
-	if (extensions.size() > 0)
+	std::vector<Extension *>::iterator it;
+	for(it = extensions.begin(); it != extensions.end(); it++)
 	{
-		extensionsStack = sk_X509_EXTENSION_new_null();
-		for (i=0;i<extensions.size();i++)
-		{
-			ext = extensions.at(i)->getX509Extension();
-			sk_X509_EXTENSION_push(extensionsStack, ext);
-		}
-		X509_REQ_add_extensions(this->req, extensionsStack);
-		sk_X509_EXTENSION_pop_free(extensionsStack, X509_EXTENSION_free);
+		this->addExtension(**it);
 	}
 }
 

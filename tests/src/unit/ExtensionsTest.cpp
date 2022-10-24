@@ -71,7 +71,7 @@ protected:
 /*
  * Initialization of variables used in the tests
  */
-long ExtensionsTest::basicConstraintsPathLen = 30;
+long ExtensionsTest::basicConstraintsPathLen = 5;
 unsigned long ExtensionsTest::serialNumber = 1234567890;
 unsigned long ExtensionsTest::serialNew = 9876543210;
 char* ExtensionsTest::keyIdentifierValue = (char *) "B132247BE75A265B9CB80BBD3474CBB7A4FA40CC";
