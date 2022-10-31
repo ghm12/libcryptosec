@@ -19,6 +19,7 @@ enum Operation
     NAME,
     OID,
     LIST,
+    WRONGSIGN,
 };
 
 protected:
@@ -37,7 +38,6 @@ protected:
 
     void fillPublicKey(CertificateRequest *req)
     {
-        keyPair = new RSAKeyPair(1024);
         req->setPublicKey(*keyPair->getPublicKey());
     }
 
@@ -81,6 +81,38 @@ protected:
         exts.push_back(&kuExt);
         req->addExtension(bcExt);
         req->addExtensions(exts);
+    }
+
+    void fillRequest(CertificateRequest *req)
+    {
+        fillVersion(req);
+        fillPublicKey(req);
+        fillRDNSequence(req);
+        fillExtensions(req);
+        req->sign(*keyPair->getPrivateKey(), mdAlgorithm);
+    }
+
+    void testSign(CertificateRequest *req, Operation op = NORMAL)
+    {
+        fillRequest(req);
+
+        if (op)
+        {
+            RSAKeyPair kp(1024);
+            req->sign(*kp.getPrivateKey(), mdAlgorithm);
+            return;
+        }
+
+        req->sign(*keyPair->getPrivateKey(), mdAlgorithm);
+    }
+
+    ByteArray getFingerPrint(CertificateRequest *req)
+    {
+        fillVersion(req);
+        fillPublicKey(req);
+        fillRDNSequence(req);
+
+        return req->getFingerPrint(mdAlgorithm);
     }
 
     void getExtension(CertificateRequest *req)
@@ -209,7 +241,18 @@ protected:
         }
     }
 
-    KeyPair *keyPair;
+    void checkRequest(CertificateRequest *req)
+    {
+        checkVersion(req);
+        checkPublicKey(req);
+        checkRDNSequence(req);
+        checkExtensions(req);
+
+        ASSERT_TRUE(req->verify());
+        ASSERT_EQ(req->getMessageDigestAlgorithm(), mdAlgorithm);
+    }
+
+    static KeyPair *keyPair;
     CertificateRequest *req;
 
     static int version;
@@ -226,12 +269,16 @@ protected:
     static std::string basicConstraintsOID;
 
     static std::vector<KeyUsageExtension::Usage> keyUsage;
+
+    static MessageDigest::Algorithm mdAlgorithm;
 };
 
 /*
  * Initialization of variables used in the tests
  */
-int CertificateRequestTest::version = 3;
+KeyPair* CertificateRequestTest::keyPair = new RSAKeyPair(1024);
+
+int CertificateRequestTest::version = 2;
 
 std::string CertificateRequestTest::rdnCountry = "BR";
 std::string CertificateRequestTest::rdnState = "Florianopolis";
@@ -246,6 +293,8 @@ std::string CertificateRequestTest::basicConstraintsOID = "2.5.29.19";
 
 std::vector<KeyUsageExtension::Usage> CertificateRequestTest::keyUsage{KeyUsageExtension::DIGITAL_SIGNATURE,
                                                                        KeyUsageExtension::DATA_ENCIPHERMENT};
+
+MessageDigest::Algorithm CertificateRequestTest::mdAlgorithm = MessageDigest::SHA512;
 
 /**
  * @brief 
@@ -289,4 +338,122 @@ TEST_F(CertificateRequestTest, Extensions) {
 
     fillExtensions(req, CertificateRequestTest::LIST);
     checkExtensions(req);
+}
+
+/**
+ * @brief 
+ */
+TEST_F(CertificateRequestTest, FingerPrint) {
+    ByteArray ba, baNew;
+
+    ba = getFingerPrint(req);
+
+    req = new CertificateRequest();
+    baNew = getFingerPrint(req);
+
+    ASSERT_EQ(ba.toString(), baNew.toString());
+
+    req = new CertificateRequest();
+    fillExtensions(req);
+    baNew = getFingerPrint(req);
+
+    ASSERT_NE(ba.toString(), baNew.toString());
+}
+
+/**
+ * @brief 
+ */
+TEST_F(CertificateRequestTest, Sign) {
+    ASSERT_FALSE(req->isSigned());
+
+    testSign(req);
+    ASSERT_TRUE(req->isSigned());
+    ASSERT_TRUE(req->verify());
+
+    req = new CertificateRequest();
+
+    testSign(req, CertificateRequestTest::WRONGSIGN);
+    ASSERT_TRUE(req->isSigned());
+    ASSERT_FALSE(req->verify());
+}
+
+/**
+ * @brief 
+ */
+TEST_F(CertificateRequestTest, FromX509) {
+    CertificateRequest newReq;
+    X509_REQ *x509;
+
+    fillRequest(req);
+    checkRequest(req);
+
+    x509 = req->getX509Req();
+    newReq = CertificateRequest(x509);
+
+    checkRequest(&newReq);
+}
+
+/**
+ * @brief 
+ */
+TEST_F(CertificateRequestTest, FromPem) {
+    CertificateRequest newReq;
+    std::string pem;
+
+    fillRequest(req);
+    checkRequest(req);
+
+    pem = req->getPemEncoded();
+    newReq = CertificateRequest(pem);
+
+    checkRequest(&newReq);
+}
+
+/**
+ * @brief 
+ */
+TEST_F(CertificateRequestTest, FromDer) {
+    CertificateRequest newReq;
+    ByteArray der;
+
+    fillRequest(req);
+    checkRequest(req);
+
+    der = req->getDerEncoded();
+    newReq = CertificateRequest(der);
+
+    checkRequest(&newReq);
+}
+
+/**
+ * @brief 
+ */
+TEST_F(CertificateRequestTest, FromRequest) {
+    CertificateRequest newReq;
+    std::string pemEncoded;
+
+    fillRequest(req);
+    checkRequest(req);
+
+    pemEncoded = req->getPemEncoded();
+    newReq = CertificateRequest(pemEncoded);
+
+    checkRequest(&newReq);
+}
+
+/**
+ * @brief 
+ */
+TEST_F(CertificateRequestTest, AssignOperator) {
+    std::string pemEncoded;
+    CertificateRequest newReq, foo;
+
+    fillRequest(req);
+    checkRequest(req);
+
+    pemEncoded = req->getPemEncoded();
+    foo = CertificateRequest(pemEncoded);
+    newReq = foo;
+
+    checkRequest(&newReq);
 }
