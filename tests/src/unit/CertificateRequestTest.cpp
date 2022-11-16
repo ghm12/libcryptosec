@@ -177,9 +177,17 @@ protected:
         PublicKey *pubKey = keyPair->getPublicKey();
         PublicKey *keyReq = req->getPublicKey();
         ASSERT_EQ(keyReq->getPemEncoded(), pubKey->getPemEncoded());
+    }
 
-        free(pubKey);
-        free(keyReq);
+    void checkPublicKeyInfo(CertificateRequest *req)
+    {
+        ByteArray fromReq, fromKey;
+        PublicKey *pubKey = keyPair->getPublicKey();
+
+        fromKey = pubKey->getKeyIdentifier();
+        fromReq = req->getPublicKeyInfo();
+
+        ASSERT_EQ(fromKey.toHex(), fromReq.toHex());
     }
 
     void checkRDNSequence(CertificateRequest *req)
@@ -241,15 +249,19 @@ protected:
         }
     }
 
+    void checkSignature(CertificateRequest *req)
+    {
+        ASSERT_TRUE(req->verify());
+        ASSERT_EQ(req->getMessageDigestAlgorithm(), mdAlgorithm);
+    }
+
     void checkRequest(CertificateRequest *req)
     {
         checkVersion(req);
         checkPublicKey(req);
         checkRDNSequence(req);
         checkExtensions(req);
-
-        ASSERT_TRUE(req->verify());
-        ASSERT_EQ(req->getMessageDigestAlgorithm(), mdAlgorithm);
+        checkSignature(req);
     }
 
     static KeyPair *keyPair;
@@ -297,7 +309,7 @@ std::vector<KeyUsageExtension::Usage> CertificateRequestTest::keyUsage{KeyUsageE
 MessageDigest::Algorithm CertificateRequestTest::mdAlgorithm = MessageDigest::SHA512;
 
 /**
- * @brief 
+ * @brief Tests set and get for CertificateRequest Version
  */
 TEST_F(CertificateRequestTest, Version) {
     fillVersion(req);
@@ -305,7 +317,7 @@ TEST_F(CertificateRequestTest, Version) {
 }
 
 /**
- * @brief 
+ * @brief Tests set and get for CertificateRequest Subject
  */
 TEST_F(CertificateRequestTest, Subject) {
     fillRDNSequence(req);
@@ -313,7 +325,7 @@ TEST_F(CertificateRequestTest, Subject) {
 }
 
 /**
- * @brief 
+ * @brief Tests set and get for CertificateRequest PublicKey
  */
 TEST_F(CertificateRequestTest, PublicKey) {
     fillPublicKey(req);
@@ -321,7 +333,16 @@ TEST_F(CertificateRequestTest, PublicKey) {
 }
 
 /**
- * @brief 
+ * @brief Tests PublicKeyInfo
+ */
+// TEST_F(CertificateRequestTest, PublicKeyInfo) {
+//     fillPublicKey(req);
+//     checkPublicKeyInfo(req);
+// }
+
+/**
+ * @brief Tests all extension features within a CertificateRequest such as set, get,
+ *        replace and remove
  */
 TEST_F(CertificateRequestTest, Extensions) {
     fillExtensions(req);
@@ -341,7 +362,7 @@ TEST_F(CertificateRequestTest, Extensions) {
 }
 
 /**
- * @brief 
+ * @brief Tests a CertificateRequest FingerPrint value
  */
 TEST_F(CertificateRequestTest, FingerPrint) {
     ByteArray ba, baNew;
@@ -361,7 +382,7 @@ TEST_F(CertificateRequestTest, FingerPrint) {
 }
 
 /**
- * @brief 
+ * @brief Tests a CertificateRequest signature and verification
  */
 TEST_F(CertificateRequestTest, Sign) {
     ASSERT_FALSE(req->isSigned());
@@ -378,7 +399,7 @@ TEST_F(CertificateRequestTest, Sign) {
 }
 
 /**
- * @brief 
+ * @brief Tests creating a CertificateRequest from a X509_REQ structure
  */
 TEST_F(CertificateRequestTest, FromX509) {
     CertificateRequest newReq;
@@ -394,7 +415,7 @@ TEST_F(CertificateRequestTest, FromX509) {
 }
 
 /**
- * @brief 
+ * @brief Tests creating a CertificareRequest from its PEM Encoding
  */
 TEST_F(CertificateRequestTest, FromPem) {
     CertificateRequest newReq;
@@ -410,7 +431,7 @@ TEST_F(CertificateRequestTest, FromPem) {
 }
 
 /**
- * @brief 
+ * @brief Tests creating a CertificareRequest from its DER Encoding
  */
 TEST_F(CertificateRequestTest, FromDer) {
     CertificateRequest newReq;
@@ -426,7 +447,7 @@ TEST_F(CertificateRequestTest, FromDer) {
 }
 
 /**
- * @brief 
+ * @brief Tests creating a CertificareRequest from another CertificateRequest
  */
 TEST_F(CertificateRequestTest, FromRequest) {
     CertificateRequest newReq;
@@ -442,7 +463,7 @@ TEST_F(CertificateRequestTest, FromRequest) {
 }
 
 /**
- * @brief 
+ * @brief Tests assigning a CertificateRequest object value to another object
  */
 TEST_F(CertificateRequestTest, AssignOperator) {
     std::string pemEncoded;

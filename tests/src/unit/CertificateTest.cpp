@@ -1,5 +1,7 @@
 #include <libcryptosec/certificate/CertificateBuilder.h>
+#include <libcryptosec/certificate/CertificateRequest.h>
 #include <libcryptosec/RSAKeyPair.h>
+#include <libcryptosec/ECDSAKeyPair.h>
 
 #include <sstream>
 #include <gtest/gtest.h>
@@ -20,11 +22,11 @@ enum Operation {
 
 protected:
     virtual void SetUp() {
-        builder = new CertificateBuilder();
+        generateCertificate();
     }
 
     virtual void TearDown() {
-        free(builder);
+        free(certificate);
     }
 
     void fillSerialNumber(CertificateBuilder *builder)
@@ -82,29 +84,10 @@ protected:
         builder->setSubject(rdn);
     }
 
-    void alterSubject(CertificateBuilder *builder)
-    {
-        RDNSequence rdn;
-
-        rdn.addEntry(RDNSequence::COUNTRY, rdnIssuerCountry);
-        rdn.addEntry(RDNSequence::STATE_OR_PROVINCE, rdnIssuerState);
-        rdn.addEntry(RDNSequence::LOCALITY, rdnIssuerLocality);
-        rdn.addEntry(RDNSequence::ORGANIZATION, rdnIssuerOrganization);
-        rdn.addEntry(RDNSequence::COMMON_NAME, rdnSubjectCommonName);
-
-        builder->alterSubject(rdn);
-    }
-
     void createBasicConstraints(BasicConstraintsExtension *ext)
     {
         ext->setCa(basicConstrainsCA);
         ext->setPathLen(basicConstraintsPathLen);
-    }
-
-    void createBasicConstraintsReplace(BasicConstraintsExtension *ext)
-    {
-        ext->setCa(basicConstrainsCA);
-        ext->setPathLen(basicConstraintsPathLenReplace);
     }
 
     void createKeyUsage(KeyUsageExtension *ext)
@@ -140,16 +123,6 @@ protected:
         builder->addExtensions(exts);
     }
 
-    void replaceExtension(CertificateBuilder *builder)
-    {
-        BasicConstraintsExtension *bcExt;
-
-        bcExt = new BasicConstraintsExtension();
-        createBasicConstraintsReplace(bcExt);
-
-        builder->replaceExtension(*bcExt);
-    }
-
     void fillCertificateBuilder(CertificateBuilder *builder)
     {
         fillSerialNumber(builder);
@@ -162,57 +135,83 @@ protected:
         fillExtensions(builder);
     }
 
-    void signBuilder(CertificateBuilder *builder)
+    Certificate* signBuilder(CertificateBuilder *builder)
     {
         PrivateKey *privKey;
 
         privKey = signKeyPair->getPrivateKey();
-        certificate = builder->sign(*privKey, mdAlgorithm);
+        return builder->sign(*privKey, mdAlgorithm);
     }
 
-    void checkSerialNumber(CertificateBuilder *builder)
+    void generateCertificate()
+    {
+        CertificateBuilder *builder = new CertificateBuilder();
+
+        fillCertificateBuilder(builder);
+        certificate = signBuilder(builder);
+
+        free(builder);
+    }
+
+    void checkSerialNumber(Certificate *cert)
     {
         BigInteger bi;
-        bi = builder->getSerialNumberBigInt();
+        bi = cert->getSerialNumberBigInt();
         ASSERT_EQ(bi.toHex(), serialHex);
     }
 
-    void checkPublicKey(CertificateBuilder *builder)
+    void checkMessageDigest(Certificate *cert)
+    {
+        ASSERT_EQ(cert->getMessageDigestAlgorithm(), mdAlgorithm);
+    }
+
+    void checkPublicKey(Certificate *cert)
     {
         PublicKey *pubKey = keyPair->getPublicKey();
-        PublicKey *keyBuilder = builder->getPublicKey();
+        PublicKey *keyCert = cert->getPublicKey();
 
-        ASSERT_EQ(keyBuilder->getPemEncoded(), pubKey->getPemEncoded());
+        ASSERT_EQ(keyCert->getPemEncoded(), pubKey->getPemEncoded());
 
         free(pubKey);
-        free(keyBuilder);
+        free(keyCert);
     }
 
-    void checkVersion(CertificateBuilder *builder)
+    void checkPublicKeyInfo(Certificate *cert)
     {
-        ASSERT_EQ(builder->getVersion(), version);
+        ByteArray crt, subject;
+        PublicKey *pubKey = keyPair->getPublicKey();
+
+        subject = pubKey->getKeyIdentifier();
+        crt = cert->getPublicKeyInfo();
+
+        ASSERT_EQ(crt.toHex(), subject.toHex());
     }
 
-    void checkNotBefore(CertificateBuilder *builder)
+    void checkVersion(Certificate *cert)
+    {
+        ASSERT_EQ(cert->getVersion(), version); 
+    }
+
+    void checkNotBefore(Certificate *cert)
     {
         DateTime dt;
-        dt = builder->getNotBefore();
+        dt = cert->getNotBefore();
 
         ASSERT_EQ(dt.getDateTime(), epochBefore);
     }
 
-    void checkNotAfter(CertificateBuilder *builder)
+    void checkNotAfter(Certificate *cert)
     {
         DateTime dt;
-        dt = builder->getNotAfter();
+        dt = cert->getNotAfter();
 
         ASSERT_EQ(dt.getDateTime(), epochAfter);
     }
 
-    void checkIssuer(CertificateBuilder *builder)
+    void checkIssuer(Certificate *cert)
     {
         RDNSequence rdn;
-        rdn = builder->getIssuer();
+        rdn = cert->getIssuer();
 
         ASSERT_EQ(rdn.getEntries(RDNSequence::COUNTRY)[0], rdnIssuerCountry);
         ASSERT_EQ(rdn.getEntries(RDNSequence::STATE_OR_PROVINCE)[0], rdnIssuerState);
@@ -221,38 +220,16 @@ protected:
         ASSERT_EQ(rdn.getEntries(RDNSequence::COMMON_NAME)[0], rdnIssuerCommonName);
     }
 
-    void checkSubject(CertificateBuilder *builder, Operation op = NORMAL)
+    void checkSubject(Certificate *cert)
     {
         RDNSequence rdn;
-        rdn = builder->getSubject();
+        rdn = cert->getSubject();
 
-        if (!op)
-        {
-            ASSERT_EQ(rdn.getEntries(RDNSequence::COUNTRY)[0], rdnSubjectCountry);
-            ASSERT_EQ(rdn.getEntries(RDNSequence::STATE_OR_PROVINCE)[0], rdnSubjectState);
-            ASSERT_EQ(rdn.getEntries(RDNSequence::LOCALITY)[0], rdnSubjectLocality);
-            ASSERT_EQ(rdn.getEntries(RDNSequence::ORGANIZATION)[0], rdnSubjectOrganization);  
-        } else
-        {
-            ASSERT_EQ(rdn.getEntries(RDNSequence::COUNTRY)[0], rdnIssuerCountry);
-            ASSERT_EQ(rdn.getEntries(RDNSequence::STATE_OR_PROVINCE)[0], rdnIssuerState);
-            ASSERT_EQ(rdn.getEntries(RDNSequence::LOCALITY)[0], rdnIssuerLocality);
-            ASSERT_EQ(rdn.getEntries(RDNSequence::ORGANIZATION)[0], rdnIssuerOrganization);
-        }
-
+        ASSERT_EQ(rdn.getEntries(RDNSequence::COUNTRY)[0], rdnSubjectCountry);
+        ASSERT_EQ(rdn.getEntries(RDNSequence::STATE_OR_PROVINCE)[0], rdnSubjectState);
+        ASSERT_EQ(rdn.getEntries(RDNSequence::LOCALITY)[0], rdnSubjectLocality);
+        ASSERT_EQ(rdn.getEntries(RDNSequence::ORGANIZATION)[0], rdnSubjectOrganization);  
         ASSERT_EQ(rdn.getEntries(RDNSequence::COMMON_NAME)[0], rdnSubjectCommonName);
-    }
-
-    void checkBasicConstraints(BasicConstraintsExtension *ext)
-    {
-        ASSERT_TRUE(ext->isCa());
-        ASSERT_EQ(ext->getPathLen(), basicConstraintsPathLen);
-    }
-
-    void checkBasicConstraintsReplace(BasicConstraintsExtension *ext)
-    {
-        ASSERT_TRUE(ext->isCa());
-        ASSERT_EQ(ext->getPathLen(), basicConstraintsPathLenReplace); 
     }
 
     void checkKeyUsage(KeyUsageExtension *ext)
@@ -271,68 +248,40 @@ protected:
         }
     }
 
-    void checkExtensions(CertificateBuilder *builder, Operation op = NORMAL)
+    void checkBasicConstraints(BasicConstraintsExtension *ext)
+    {
+        ASSERT_TRUE(ext->isCa());
+        ASSERT_EQ(ext->getPathLen(), basicConstraintsPathLen);
+    }
+
+    void checkExtensions(Certificate *cert)
     {
         BasicConstraintsExtension *bcExt;
         KeyUsageExtension *kuExt;
         std::vector<Extension *> exts;
 
-        exts = builder->getExtensions();
+        exts = cert->getExtensions();
         bcExt = new BasicConstraintsExtension(exts[0]->getX509Extension());
         kuExt = new KeyUsageExtension(exts[1]->getX509Extension());
-
-        if (!op)
-        {
-            checkBasicConstraints(bcExt);
-        }
-        else
-        {
-            checkBasicConstraintsReplace(bcExt);
-        }
-
-        checkKeyUsage(kuExt);
-    }
-
-    void getExtension(CertificateBuilder *builder)
-    {
-        BasicConstraintsExtension *bcExt;
-        KeyUsageExtension *kuExt;
-        Extension *ext;
-
-        ext = builder->getExtension(Extension::BASIC_CONSTRAINTS)[0];
-        bcExt = new BasicConstraintsExtension(ext->getX509Extension());
-
-        ext = builder->getExtension(Extension::KEY_USAGE)[0];
-        kuExt = new KeyUsageExtension(ext->getX509Extension());
-
+        
         checkBasicConstraints(bcExt);
         checkKeyUsage(kuExt);
     }
 
-    void removeExtension(CertificateBuilder *builder, Operation op = NORMAL)
+    void getExtension(Certificate *cert)
     {
         BasicConstraintsExtension *bcExt;
         KeyUsageExtension *kuExt;
-        ObjectIdentifier oid;
         Extension *ext;
 
-        if (!op)
-        {
-            ext = builder->removeExtension(Extension::KEY_USAGE)[0];
-            kuExt = new KeyUsageExtension(ext->getX509Extension());
+        ext = cert->getExtension(Extension::BASIC_CONSTRAINTS)[0];
+        bcExt = new BasicConstraintsExtension(ext->getX509Extension());
 
-            checkKeyUsage(kuExt);
-        }
-        else
-        {
-            oid = ObjectIdentifierFactory::getObjectIdentifier(basicConstraintsOID);
-            ext = builder->removeExtension(oid)[0];
-            bcExt = new BasicConstraintsExtension(ext->getX509Extension());
+        ext = cert->getExtension(Extension::KEY_USAGE)[0];
+        kuExt = new KeyUsageExtension(ext->getX509Extension());
 
-            checkBasicConstraints(bcExt);
-        }
-
-        ASSERT_TRUE(builder->getExtensions().size() == 1);
+        checkBasicConstraints(bcExt);
+        checkKeyUsage(kuExt);
     }
 
     void checkSignature(Certificate* cert)
@@ -343,9 +292,83 @@ protected:
         ASSERT_TRUE(cert->verify(*pubKey));
     }
 
+    void checkCertificate(Certificate *cert)
+    {
+        checkSerialNumber(cert);
+        checkMessageDigest(cert);
+        checkPublicKey(cert);
+        checkPublicKeyInfo(cert);
+        checkVersion(cert);
+        checkNotBefore(cert);
+        checkNotAfter(cert);
+        checkIssuer(cert);
+        checkSubject(cert);
+        checkExtensions(cert);
+        checkSignature(cert);
+    }
+
+    void checkVersion(CertificateRequest *req)
+    {
+        ASSERT_EQ(req->getVersion(), 0);
+    }
+
+    void checkPublicKey(CertificateRequest *req)
+    {
+        PublicKey *pubKey = keyPair->getPublicKey();
+        PublicKey *keyReq = req->getPublicKey();
+        ASSERT_EQ(keyReq->getPemEncoded(), pubKey->getPemEncoded());
+
+        free(pubKey);
+        free(keyReq);
+    }
+
+    void checkRDNSequence(CertificateRequest *req)
+    {
+        RDNSequence rdn = req->getSubject();
+
+        ASSERT_EQ(rdn.getEntries(RDNSequence::COUNTRY)[0], rdnSubjectCountry);
+        ASSERT_EQ(rdn.getEntries(RDNSequence::STATE_OR_PROVINCE)[0], rdnSubjectState);
+        ASSERT_EQ(rdn.getEntries(RDNSequence::LOCALITY)[0], rdnSubjectLocality);
+        ASSERT_EQ(rdn.getEntries(RDNSequence::ORGANIZATION)[0], rdnSubjectOrganization);
+        ASSERT_EQ(rdn.getEntries(RDNSequence::COMMON_NAME)[0], rdnSubjectCommonName);
+    }
+
+    void checkExtensions(CertificateRequest *req)
+    {
+        std::vector<Extension *> exts;
+        BasicConstraintsExtension *bcExt;
+        KeyUsageExtension *kuExt;
+
+        exts = req->getExtensions();
+        bcExt = new BasicConstraintsExtension(exts[0]->getX509Extension());
+        kuExt = new KeyUsageExtension(exts[1]->getX509Extension());
+
+        checkBasicConstraints(bcExt);
+        checkKeyUsage(kuExt);
+    }
+
+    void checkSignature(CertificateRequest *req)
+    {
+        ASSERT_TRUE(req->verify());
+        ASSERT_EQ(req->getMessageDigestAlgorithm(), mdAlgorithm);
+    }
+
+    void checkNewRequest(Certificate* cert)
+    {
+        CertificateRequest req;
+        PrivateKey *privKey;
+
+        privKey = keyPair->getPrivateKey();
+        req = certificate->getNewCertificateRequest(*privKey, mdAlgorithm);
+
+        checkVersion(&req);
+        checkPublicKey(&req);
+        checkRDNSequence(&req);
+        checkSignature(&req);
+    }
+
     static KeyPair *keyPair;
     static KeyPair *signKeyPair;
-    CertificateBuilder *builder;
     Certificate *certificate;
 
     static int version;
@@ -411,122 +434,174 @@ std::vector<KeyUsageExtension::Usage> CertificateTest::keyUsage{KeyUsageExtensio
 MessageDigest::Algorithm CertificateTest::mdAlgorithm = MessageDigest::SHA512;
 
 /**
- * @brief 
+ * @brief Tests getting the SerialNumber from a Certificate
  */
 TEST_F(CertificateTest, SerialNumber) {
-    fillSerialNumber(builder);
-    checkSerialNumber(builder);
+    checkSerialNumber(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting the MessaDigest algorithm from a Certificate
+ */
+TEST_F(CertificateTest, MessageDigest) {
+    checkMessageDigest(certificate);
+}
+
+/**
+ * @brief Tests getting the PublicKey from a Certificate
  */
 TEST_F(CertificateTest, PublicKey) {
-    fillPublicKey(builder);
-    checkPublicKey(builder);
+    checkPublicKey(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting the PublicKeyInfo from a Certificate and comparing to the original KeyIdentifier
+ */
+TEST_F(CertificateTest, PublicKeyInfo) {
+    checkPublicKeyInfo(certificate);
+}
+
+/**
+ * @brief Tests getting the Version from a Certificate
  */
 TEST_F(CertificateTest, Version) {
-    fillVersion(builder);
-    checkVersion(builder);
+    checkVersion(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting the NotBefore DateTime from a Certificate
  */
 TEST_F(CertificateTest, NotBefore) {
-    fillNotBefore(builder);
-    checkNotBefore(builder);
+    checkNotBefore(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting the NotAfter DateTime from a Certificate
  */
 TEST_F(CertificateTest, NotAfter) {
-    fillNotAfter(builder);
-    checkNotAfter(builder);
+    checkNotAfter(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting the Issuer from a Certificate
  */
-TEST_F(CertificateTest, IssuerRDN) {
-    fillIssuer(builder);
-    checkIssuer(builder);
+TEST_F(CertificateTest, Issuer) {
+    checkIssuer(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting the Subject from a Certificate
  */
-TEST_F(CertificateTest, SubjectRDN) {
-    fillSubject(builder);
-    checkSubject(builder);
+TEST_F(CertificateTest, Subject) {
+    checkSubject(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting the Extensions from a Certificate
  */
-TEST_F(CertificateTest, AlterSubject) {
-    fillSubject(builder);
-    alterSubject(builder);
-    checkSubject(builder, CertificateTest::ALTER);
+TEST_F(CertificateTest, Extensions) {
+    checkExtensions(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests getting a single Extension from a Certificate
  */
 TEST_F(CertificateTest, Extension) {
-    fillExtensions(builder);
-    checkExtensions(builder);
+    getExtension(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests verifying the signature from a Certificate
  */
-TEST_F(CertificateTest, ExtensionVector) {
-    fillExtensions(builder, CertificateTest::VECTOR);
-    checkExtensions(builder);
+TEST_F(CertificateTest, Signature) {
+    checkSignature(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests creating a new CertificateRequest from the current Certificate
  */
-TEST_F(CertificateTest, GetExtension) {
-    fillExtensions(builder);
-    getExtension(builder);
+TEST_F(CertificateTest, NewRequest) {
+    checkNewRequest(certificate);
 }
 
 /**
- * @brief 
+ * @brief Tests creating a new Certificate Object from its X509 structure
  */
-TEST_F(CertificateTest, RemoveExtension) {
-    fillExtensions(builder);
-    removeExtension(builder);
+TEST_F(CertificateTest, FromX509) {
+    Certificate *newCert;
+    X509 *x509;
+
+    x509 = certificate->getX509();
+    newCert = new Certificate(x509);
+
+    checkCertificate(newCert);
+    free(newCert);
 }
 
 /**
- * @brief 
+ * @brief Tests creating a new Certificate Object from its PEM Encoding
  */
-TEST_F(CertificateTest, RemoveExtensionOID) {
-    fillExtensions(builder);
-    removeExtension(builder, CertificateTest::OID);
+TEST_F(CertificateTest, FromPem) {
+    Certificate *newCert;
+    newCert = new Certificate(certificate->getPemEncoded());
+
+    checkCertificate(newCert);
+    free(newCert);
 }
 
 /**
- * @brief 
+ * @brief Tests creating a new Certificate Object from its DER Encoding
  */
-TEST_F(CertificateTest, ReplaceExtension) {
-    fillExtensions(builder);
-    replaceExtension(builder);
-    checkExtensions(builder, CertificateTest::ALTER);
+TEST_F(CertificateTest, FromDer) {
+    Certificate *newCert;
+    ByteArray ba;
+
+    ba = certificate->getDerEncoded();
+    newCert = new Certificate(ba);
+
+    checkCertificate(newCert);
+    free(newCert);
 }
 
 /**
- * @brief 
+ * @brief Tests creating a new Certificate Object from another Certificate Object
  */
-TEST_F(CertificateTest, Sign) {
+TEST_F(CertificateTest, FromCertificate) {
+    Certificate *newCert;
 
+    Certificate midCert(certificate->getPemEncoded());
+    newCert = new Certificate(midCert);
+
+    checkCertificate(newCert);
+    free(newCert);
+}
+
+/**
+ * @brief Tests assigning the value from a Certificate Object to another Certificate Object
+ */
+TEST_F(CertificateTest, OperatorAssign) {
+    Certificate midCert(certificate->getPemEncoded());
+    Certificate newCert = midCert;
+
+    checkCertificate(&newCert);
+}
+
+/**
+ * @brief Tests if both Certificate Objects are equal
+ */
+TEST_F(CertificateTest, OperatorEqual) {
+    Certificate midCert(certificate->getPemEncoded());
+    Certificate newCert = midCert;
+
+    ASSERT_TRUE(midCert == newCert);
+}
+
+/**
+ * @brief Tests if both Certificate Objects are not equal
+ */
+TEST_F(CertificateTest, OperatorNotEqual) {
+    Certificate midCert(certificate->getPemEncoded());
+    Certificate newCert = midCert;
+
+    ASSERT_FALSE(midCert != newCert);
 }
