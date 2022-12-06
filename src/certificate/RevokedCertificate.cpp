@@ -13,7 +13,7 @@ RevokedCertificate::RevokedCertificate(X509_REVOKED *revoked)
 	{
 		if (X509_REVOKED_get0_serialNumber(revoked))
 		{
-			this->certificateSerialNumber = BigInteger(ASN1_INTEGER_get(X509_REVOKED_get0_serialNumber(revoked)));
+			this->certificateSerialNumber = BigInteger(ASN1_INTEGER_to_BN(X509_REVOKED_get0_serialNumber(revoked), NULL));
 		}
 		else
 		{
@@ -115,7 +115,7 @@ X509_REVOKED* RevokedCertificate::getX509Revoked()
 	
 	X509_REVOKED_set_serialNumber(ret, this->certificateSerialNumber.getASN1Value());
 
-	X509_REVOKED_set_revocationDate(ret, this->revocationDate.getAsn1Time());
+	X509_REVOKED_set_revocationDate(ret, ASN1_TIME_set(NULL, this->revocationDate.getDateTime()));
 
 	if (this->reasonCode != RevokedCertificate::UNSPECIFIED)
 	{
