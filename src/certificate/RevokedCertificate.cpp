@@ -115,7 +115,7 @@ X509_REVOKED* RevokedCertificate::getX509Revoked()
 	
 	X509_REVOKED_set_serialNumber(ret, this->certificateSerialNumber.getASN1Value());
 
-	X509_REVOKED_set_revocationDate(ret, ASN1_TIME_set(NULL, this->revocationDate.getDateTime()));
+	X509_REVOKED_set_revocationDate(ret, this->revocationDate.getAsn1Time());
 
 	if (this->reasonCode != RevokedCertificate::UNSPECIFIED)
 	{

@@ -254,8 +254,8 @@ void CertificateRevocationListBuilder::setLastUpdate(DateTime &dateTime)
 	/*
 	 * Devido a um bug do firefox ao abrir CRL com datas em formato GeneralizedTime, mudou-se para UTC
 	 * */
-	asn1Time = ASN1_TIME_set(NULL, dateTime.getDateTime());
-	//asn1Time = dateTime.getUTCTime();
+	//asn1Time = ASN1_TIME_set(NULL, dateTime.getDateTime());
+	asn1Time = dateTime.getAsn1Time();
 	X509_CRL_set_lastUpdate(this->crl, asn1Time);
 	ASN1_TIME_free(asn1Time);
 }
@@ -272,8 +272,8 @@ void CertificateRevocationListBuilder::setNextUpdate(DateTime &dateTime)
 	/*
 	 * Devido a um bug do firefox ao abrir CRL com datas em formato GeneralizedTime, mudou-se para UTC
 	 * */
-	asn1Time = ASN1_TIME_set(NULL, dateTime.getDateTime());
-	//dateAsn1 = dateTime.getUTCTime();
+	//asn1Time = ASN1_TIME_set(NULL, dateTime.getDateTime());
+	asn1Time = dateTime.getAsn1Time();
 	X509_CRL_set_nextUpdate(this->crl, asn1Time);
 	ASN1_TIME_free(asn1Time);
 }

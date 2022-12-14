@@ -229,10 +229,10 @@ ASN1_TIME* DateTime::getGeneralizedTime() const throw(BigIntegerException)
 
 	gt = stream.str();
 	
-	ret = ASN1_GENERALIZEDTIME_new();
+	ret = ASN1_TIME_new();
 	
 	//pode retornar 1 no caso de falha de alocacao de memoria
-	ASN1_STRING_set(ret, gt.c_str(), gt.size());
+	ASN1_TIME_set_string_X509(ret, gt.c_str());
 
 	return ret;
 }
@@ -278,10 +278,10 @@ ASN1_TIME* DateTime::getUTCTime() const throw(BigIntegerException)
 
 	utc = stream.str();
 	
-	ret = ASN1_STRING_new();
-	
+	ret = ASN1_TIME_new();
+
 	//pode retornar 1 no caso de falha de alocacao de memoria
-	ASN1_STRING_set(ret, utc.c_str(), utc.size());
+	ASN1_TIME_set_string_X509(ret, utc.c_str());
 
 	return ret;
 }
