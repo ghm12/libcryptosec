@@ -73,11 +73,31 @@ protected:
         checkReasonCode(rev);
     }
 
+    void checkRevokedCertificateUnfilled(RevokedCertificate *rev)
+    {
+        BigInteger bi;
+        bi = rev->getCertificateSerialNumberBigInt();
+
+        ASSERT_EQ(bi.getValue(), 0);
+        ASSERT_EQ(rev->getReasonCode(), RevokedCertificate::UNSPECIFIED);
+    }
+
+    void checkReasonCode2Name()
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            RevokedCertificate::ReasonCode reason = (RevokedCertificate::ReasonCode) i;
+
+            ASSERT_EQ(RevokedCertificate::reasonCode2Name(reason), names.at(i));
+        }
+    }
+
     RevokedCertificate *revoked;
 
     static std::string serialHex;
     static int epochDate;
     static RevokedCertificate::ReasonCode reason;
+    static std::vector<std::string> names;
 };
 
 /*
@@ -86,9 +106,12 @@ protected:
 std::string RevokedCertificateTest::serialHex = "DC94A473D5C86891";
 int RevokedCertificateTest::epochDate = 1665096307;
 RevokedCertificate::ReasonCode RevokedCertificateTest::reason = RevokedCertificate::KEY_COMPROMISE;
+std::vector<std::string> RevokedCertificateTest::names{"unspecified", "keyCompromise", "caCompromise", 
+                                                       "affiliationChanged", "superSeded", "cessationOfOperation", 
+                                                        "certificateHold", "privilegeWithDrawn", "aACompromise"};
 
 /**
- * @brief 
+ * @brief Tests set and get a RevokedCertificate's serial number
  */
 TEST_F(RevokedCertificateTest, SerialNumber) {
     fillSerialNumber(revoked);
@@ -96,7 +119,7 @@ TEST_F(RevokedCertificateTest, SerialNumber) {
 }
 
 /**
- * @brief 
+ * @brief Tests set and get a RevokedCertificate's revocation date
  */
 TEST_F(RevokedCertificateTest, RevocationDate) {
     fillRevocationDate(revoked);
@@ -104,7 +127,7 @@ TEST_F(RevokedCertificateTest, RevocationDate) {
 }
 
 /**
- * @brief 
+ * @brief Tests set and get a RevokedCertificate's reason code
  */
 TEST_F(RevokedCertificateTest, ReasonCode) {
     fillReasonCode(revoked);
@@ -112,7 +135,7 @@ TEST_F(RevokedCertificateTest, ReasonCode) {
 }
 
 /**
- * @brief 
+ * @brief Tests getting a RevokedCertificate's data encoded as XML
  */
 TEST_F(RevokedCertificateTest, XmlEncoded) {
     fillRevokedCertificate(revoked);
@@ -120,7 +143,7 @@ TEST_F(RevokedCertificateTest, XmlEncoded) {
 }
 
 /**
- * @brief 
+ * @brief Tests creating a new RevokedCertificate from a X509_REVOKED
  */
 TEST_F(RevokedCertificateTest, FromX509) {
     X509_REVOKED *x509;
@@ -131,4 +154,31 @@ TEST_F(RevokedCertificateTest, FromX509) {
     revoked = new RevokedCertificate(x509);
     
     checkRevokedCertificate(revoked);
+}
+
+/**
+ * @brief Tests creating a new RevokedCertificate from a X509_REVOKED not yet filled with data
+ */
+TEST_F(RevokedCertificateTest, FromX509Unfilled) {
+    X509_REVOKED *x509;
+
+    x509 = revoked->getX509Revoked();
+    revoked = new RevokedCertificate(x509);
+    
+    checkRevokedCertificateUnfilled(revoked);
+}
+
+/**
+ * @brief Tests creating a new RevokedCertificate from NULL
+ */
+TEST_F(RevokedCertificateTest, FromX509Null) {
+    revoked = new RevokedCertificate(NULL);
+    checkRevokedCertificateUnfilled(revoked);
+}
+
+/**
+ * @brief Tests if each ReasonCode translates to their correct name
+ */
+TEST_F(RevokedCertificateTest, ReasonCode2Name) {
+    checkReasonCode2Name();
 }
