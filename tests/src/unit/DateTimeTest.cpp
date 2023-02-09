@@ -27,6 +27,15 @@ protected:
         ASSERT_EQ(dt->getXmlEncoded(), xmlEncoded);
     }
 
+    void testLimitValues(DateTime *dt) {
+        BigInteger seconds = dt->getSeconds();
+
+        ASSERT_EQ(dt->getDateTime(), epochAboveLimit);
+        ASSERT_EQ(seconds.getValue(), epochAboveLimit);
+        ASSERT_EQ(dt->getISODate(), dateISOLimit);
+        ASSERT_EQ(dt->getXmlEncoded(), xmlEncodedLimit);
+    }
+
     DateTime *dt;
     static int leapYear;
     static int year;
@@ -40,9 +49,12 @@ protected:
     static long addValue;
     static time_t epoch;
     static time_t addedEpoch;
+    static time_t epochAboveLimit;
     static std::string dateISO;
+    static std::string dateISOLimit;
     static std::string dateUTC;
     static std::string xmlEncoded;
+    static std::string xmlEncodedLimit;
     static std::string addedISO;
     static std::string addedUTC;
     static std::string addedXmlEncoded;
@@ -63,9 +75,12 @@ int DateTimeTest::dayOfYear = 53;
 long DateTimeTest::addValue = 14;
 time_t DateTimeTest::epoch = 1487889907;
 time_t DateTimeTest::addedEpoch = 1930654761;
+time_t DateTimeTest::epochAboveLimit = 2524608001;
 std::string DateTimeTest::dateISO = "2017-02-23T22:45:07";
+std::string DateTimeTest::dateISOLimit = "2050-01-01T00:00:01";
 std::string DateTimeTest::dateUTC = "20170223224507Z";
 std::string DateTimeTest::xmlEncoded = "170223224507Z";
+std::string DateTimeTest::xmlEncodedLimit = "20500101000001Z";
 std::string DateTimeTest::addedISO = "2031-03-07T12:59:21";
 std::string DateTimeTest::addedXmlEncoded = "310307125921Z";
 
@@ -75,6 +90,14 @@ std::string DateTimeTest::addedXmlEncoded = "310307125921Z";
 TEST_F(DateTimeTest, FromTimeT) {
     dt = new DateTime(DateTimeTest::epoch);
     testDateTimeValues(dt);
+}
+
+/**
+ * @brief Tests creation of DateTime object from time_t structure when value is above UTC limit
+ */
+TEST_F(DateTimeTest, FromTimeTAboveLimit) {
+    dt = new DateTime(DateTimeTest::epochAboveLimit);
+    testLimitValues(dt);
 }
 
 /**

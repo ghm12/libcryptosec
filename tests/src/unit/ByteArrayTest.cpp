@@ -16,6 +16,9 @@ protected:
     virtual void TearDown() {
     }
 
+    static std::string simpleASCII;
+    static std::string simpleHex;
+    static std::string simpleHexSeparator;
     static std::string stringASCII;
     static std::string stringHex;
     static const char compChar;
@@ -27,6 +30,9 @@ protected:
 /*
  * Initialization of variables used in the tests
  */
+std::string ByteArrayTest::simpleASCII = "Simple";
+std::string ByteArrayTest::simpleHex = "53696D706C65";
+std::string ByteArrayTest::simpleHexSeparator = "53-69-6D-70-6C-65";
 std::string ByteArrayTest::stringASCII = "I found it! Silksong release date is [redacted]";
 std::string ByteArrayTest::stringHex = "4920666F756E64206974212053696C6B736F6E672072656C656173652064617465206973205B72656461637465645D";
 const char ByteArrayTest::compChar = '!';
@@ -163,4 +169,23 @@ TEST_F(ByteArrayTest, CopyFromChar) {
 
     ASSERT_TRUE(ba == baCopy);
     ASSERT_FALSE(ba != baCopy);
+}
+
+/**
+ * @brief Tests throwing if accessing invalid position in ByteArray
+ */
+TEST_F(ByteArrayTest, ThrowInvalidPosition) {
+    ByteArray ba;
+
+    ASSERT_THROW(ba[0], out_of_range);
+    ASSERT_THROW(ba.at(0), out_of_range);
+}
+
+/**
+ * @brief Tests separating bytes from the Hex value of ByteArray with a specified char
+ */
+TEST_F(ByteArrayTest, ToHexSeparator) {
+    ByteArray ba(simpleASCII);
+
+    ASSERT_EQ(ba.toHex('-'), ByteArrayTest::simpleHexSeparator);
 }
