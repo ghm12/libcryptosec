@@ -214,12 +214,12 @@ CertificateBuilder::~CertificateBuilder()
 
 				ret += "\t\t\t<subjectPublicKey>" + string + "</subjectPublicKey>\n";
 
-				ASN1_OBJECT_free(ppkalg);
-				X509_ALGOR_free(pa);
+				//ASN1_OBJECT_free(ppkalg);
+				//X509_ALGOR_free(pa);
 
  			}
 
- 			X509_PUBKEY_free(pk);
+ 			//X509_PUBKEY_free(pk);
 
  		ret += "\t\t</subjectPublicKeyInfo>\n";
 
@@ -355,12 +355,12 @@ CertificateBuilder::~CertificateBuilder()
 
 				ret += "\t\t\t<subjectPublicKey>" + string + "</subjectPublicKey>\n";
 
-				ASN1_OBJECT_free(ppkalg);
-				X509_ALGOR_free(pa);
+				//ASN1_OBJECT_free(ppkalg);
+				//X509_ALGOR_free(pa);
 
  			}
 
- 			X509_PUBKEY_free(pk);
+ 			//X509_PUBKEY_free(pk);
 
  		ret += "\t\t</subjectPublicKeyInfo>\n";
 
