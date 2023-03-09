@@ -160,12 +160,12 @@ Certificate::~Certificate()
 
 				ret += "\t\t\t<subjectPublicKey>" + string + "</subjectPublicKey>\n";
 
-				ASN1_OBJECT_free(ppkalg);
-				X509_ALGOR_free(pa);
+				//ASN1_OBJECT_free(ppkalg);
+				//X509_ALGOR_free(pa);
 
  			}
 
- 			X509_PUBKEY_free(pk);
+ 			//X509_PUBKEY_free(pk);
 
  		ret += "\t\t</subjectPublicKeyInfo>\n";
 
@@ -223,8 +223,8 @@ Certificate::~Certificate()
 	X509_ALGOR_free(tempAlg);
 
 
-	ASN1_BIT_STRING_free(const_cast<ASN1_BIT_STRING*>(psig));
-	X509_ALGOR_free(const_cast<X509_ALGOR*>(palg));
+	//ASN1_BIT_STRING_free(const_cast<ASN1_BIT_STRING*>(psig));
+	//X509_ALGOR_free(const_cast<X509_ALGOR*>(palg));
 
 
  	return ret;
@@ -320,12 +320,12 @@ Certificate::~Certificate()
 
 				ret += "\t\t\t<subjectPublicKey>" + string + "</subjectPublicKey>\n";
 
-				ASN1_OBJECT_free(ppkalg);
-				X509_ALGOR_free(pa);
+				//ASN1_OBJECT_free(ppkalg);
+				//X509_ALGOR_free(pa);
 
  			}
 
- 			X509_PUBKEY_free(pk);
+ 			//X509_PUBKEY_free(pk);
 
  		ret += "\t\t</subjectPublicKeyInfo>\n";
 
@@ -381,8 +381,8 @@ Certificate::~Certificate()
 	ASN1_BIT_STRING_free(tempSig);
 	X509_ALGOR_free(tempAlg);
 
-	ASN1_BIT_STRING_free(const_cast<ASN1_BIT_STRING*>(psig));
-	X509_ALGOR_free(const_cast<X509_ALGOR*>(palg));
+	//ASN1_BIT_STRING_free(const_cast<ASN1_BIT_STRING*>(psig));
+	//X509_ALGOR_free(const_cast<X509_ALGOR*>(palg));
 
  	ret += "</certificate>\n";
  	return ret;
@@ -614,7 +614,7 @@ std::vector<Extension*> Certificate::getExtension(Extension::Name extensionName)
 			switch (Extension::getName(ext))
 			{
 				case Extension::KEY_USAGE:
-						oneExt = new KeyUsageExtension(ext);
+					oneExt = new KeyUsageExtension(ext);
 					break;
 				case Extension::EXTENDED_KEY_USAGE:
 					oneExt = new ExtendedKeyUsageExtension(ext);
