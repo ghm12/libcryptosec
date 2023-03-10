@@ -274,17 +274,25 @@ PublicKey* CertificateRequest::getPublicKey()
 ByteArray CertificateRequest::getPublicKeyInfo()
 		throw (CertificationException)
 {
-	ByteArray ret =  ByteArray(EVP_MAX_MD_SIZE);
-	unsigned char *key_bin;
-	unsigned int key_len = i2d_X509_PUBKEY(X509_REQ_get_X509_PUBKEY(this->req), &key_bin);
-	if (key_len <= 0)
-	{
-		throw CertificationException(CertificationException::SET_NO_VALUE, "CertificateBuilder::getPublicKeyInfo");
-	}
-	unsigned int size;
-	EVP_Digest(key_bin, key_len, ret.getDataPointer(), &size, EVP_sha1(), NULL);
-	ret = ByteArray(ret.getDataPointer(), size);
-	return ret;
+	//X509 *cert;
+	//ByteArray ret = ByteArray(EVP_MAX_MD_SIZE);
+	//unsigned int key_len;
+	//unsigned char *key_bin = NULL;
+	//cert = X509_REQ_to_X509(this->req, 1, NULL);
+	//X509_PUBKEY *key = X509_REQ_get_X509_PUBKEY(this->req);
+	//key_len = i2d_X509_PUBKEY(key, &key_bin);
+	////i2d_X509_PUBKEY(X509_REQ_get_X509_PUBKEY(this->req), &key_bin);
+	//if (key_len <= 0)
+	//{
+	//	throw CertificationException(CertificationException::SET_NO_VALUE, "CertificateBuilder::getPublicKeyInfo");
+	//}
+	//ASN1_BIT_STRING *temp = X509_get0_pubkey_bitstr(cert);
+	//unsigned int size;
+	//std::cout << key_len << std::endl;
+	//EVP_Digest(temp->data, temp->length, ret.getDataPointer(), &size, EVP_sha1(), NULL);
+	//ret = ByteArray(ret.getDataPointer(), size);
+	PublicKey pubKey = PublicKey(X509_REQ_get_pubkey(this->req));
+	return pubKey.getKeyIdentifier();
 }
 
 void CertificateRequest::setSubject(RDNSequence &name)
