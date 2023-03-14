@@ -73,49 +73,7 @@ std::string CertificateRequest::getXmlEncoded()
 
 std::string CertificateRequest::getXmlEncoded(std::string tab)
 {
-	std::string ret, string;
-	unsigned int i;
-	RDNSequence subject;
-	std::vector<Extension *> extensions;
-	ByteArray publicKeyInfo;
-	char temp[15];
-	long value;
-
-	ret = tab + "<certificateRequest>\n";
-
-		value = this->getVersion();
-		sprintf(temp, "%d", (int)value);
-		string = temp;
-		ret += tab + "\t<version>" + string + "</version>\n";
-
-		ret += tab + "\t<subject>\n";
-		subject = this->getSubject();
-		ret += subject.getXmlEncoded(tab + "\t\t");
-		ret += tab + "\t</subject>\n";
-
-		try
-		{
-			publicKeyInfo = this->getPublicKeyInfo();
-			ret += tab + "\t<publicKeyInfo>\n";
-			ret += tab + "\t\t" + Base64::encode(publicKeyInfo) + "\n";
-			ret += tab + "\t</publicKeyInfo>\n";
-		}
-		catch (...)
-		{
-		}
-
-		ret += tab + "\t<extensions>\n";
-		extensions = this->getExtensions();
-		for (i=0;i<extensions.size();i++)
-		{
-			ret += extensions.at(i)->getXmlEncoded(tab + "\t\t");
-			delete extensions.at(i);
-		}
-		ret += tab + "\t</extensions>\n";
-
-	ret += tab + "</certificateRequest>\n";
-
-	return ret;
+	return this->toXml(tab);
 }
 
 std::string CertificateRequest::toXml(std::string tab)
