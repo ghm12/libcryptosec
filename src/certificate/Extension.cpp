@@ -103,7 +103,9 @@ X509_EXTENSION* Extension::getX509Extension()
 	ByteArray data;
 	ret = X509_EXTENSION_new();
 	ret->object = OBJ_dup(this->objectIdentifier.getObjectIdentifier());
-	ret->critical = this->critical?1:0;
+	if (this->critical) {
+		ret->critical = 1;
+	}	
 	ret->value = ASN1_OCTET_STRING_new();
 	data = this->value;
 	ASN1_OCTET_STRING_set(ret->value, data.getDataPointer(), this->value.size());
